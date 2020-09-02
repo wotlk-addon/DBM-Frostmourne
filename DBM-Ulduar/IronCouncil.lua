@@ -110,6 +110,12 @@ local function warnStaticDisruptionTargets()
 	disruptIcon = 7
 end
 
+function mod:ResetRange() -- After boss range was set
+	if self.Options.RangeFrame then
+		DBM.RangeCheck:DisableBossMode()
+	end
+end
+
 function mod:SPELL_CAST_START(args)
 	if args:IsSpellID(61920) then -- Supercharge - Unleashes one last burst of energy as the caster dies, increasing all allies damage by 25% and granting them an additional ability.
 		warnSupercharge:Show()
@@ -142,6 +148,10 @@ function mod:SPELL_CAST_SUCCESS(args)
 			if self.Options.PlaySoundOnOverload then
 				PlaySoundFile("Sound\\Creature\\HoodWolf\\HoodWolfTransformPlayer01.wav")
 			end
+		end
+		if self.Options.RangeFrame then
+			DBM.RangeCheck:SetBossRange(20, self:GetBossUnitByCreatureId(32857))
+			self:ScheduleMethod(6.5, "ResetRange")
 		end
 	end
 end

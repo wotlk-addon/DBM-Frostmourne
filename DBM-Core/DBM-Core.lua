@@ -58,10 +58,10 @@ f:SetScript("OnUpdate", fCLFix)
 --  Globals/Default Options  --
 -------------------------------
 DBM = {
-	Revision = ("$Revision: 5050 $"):sub(12, -3),
+	Revision = ("$Revision: 5051 $"):sub(12, -3),
 	Version = "5.05",
-	DisplayVersion = "5.05 DBM-Frostmourne. Original edit by Sariyo.", -- the string that is shown as version
-	ReleaseRevision = 5050 -- the revision of the latest stable version that is available (for /dbm ver2)
+	DisplayVersion = "5.05 DBM-Frostmourne-Outlaw. Original edit by Sariyo.", -- the string that is shown as version
+	ReleaseRevision = 5051 -- the revision of the latest stable version that is available (for /dbm ver2)
 }
 
 DBM_SavedOptions = {}
@@ -2440,6 +2440,16 @@ end
 
 function bossModPrototype:GetCIDFromGUID(guid)
 	return (guid and tonumber(guid:sub(9, 12), 16)) or 0
+end
+
+function bossModPrototype:GetBossUnitByCreatureId(cid)
+	for i = 1, 4 do
+		local uId = "boss"..i
+		if self:GetUnitCreatureId(uId) == cid then
+			return uId
+		end
+	end
+	return "target"
 end
 
 function bossModPrototype:GetBossTarget(cid)

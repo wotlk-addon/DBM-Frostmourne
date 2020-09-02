@@ -27,7 +27,7 @@ local lootannounce				= mod:NewAnnounce("MagneticCore", 1)
 local warnBombSpawn				= mod:NewAnnounce("WarnBombSpawn", 3)
 local warnFrostBomb				= mod:NewSpellAnnounce(64623, 3)
 
-local warnFlamesSoon			= mod:NewSoonAnnounce(64566, 1) 
+local warnFlamesSoon			= mod:NewSoonAnnounce(64566, 3) 
 local warnFlamesIn5Sec			= mod:NewSpecialWarning("WarningFlamesIn5Sec", 3)
 
 local warnShockBlast			= mod:NewSpecialWarning("WarningShockBlast", nil, false)
@@ -78,16 +78,6 @@ local function warnNapalmShellTargets()
 	shellWarn:Show(table.concat(napalmShellTargets, "<, >"))
 	table.wipe(napalmShellTargets)
 	napalmShellIcon = 7
-end
-
-local function getBossUnitByCreatureId(creatureId)
-	for i = 1, 4 do
-		local uId = "boss"..i
-		if mod:GetUnitCreatureId(uId) == creatureId then
-			return uId
-		end
-	end
-	return "target"
 end
 
 function mod:OnCombatStart(delay)
@@ -205,8 +195,8 @@ function mod:SPELL_CAST_START(args)
 			PlaySoundFile("Sound\\Creature\\HoodWolf\\HoodWolfTransformPlayer01.wav")
 		end
 		if self.Options.RangeFrame then
-			DBM.RangeCheck:SetBossRange(15, getBossUnitByCreatureId(33432))
-			self:ScheduleMethod(5, "ResetRange")
+			DBM.RangeCheck:SetBossRange(15, self:GetBossUnitByCreatureId(33432))
+			self:ScheduleMethod(4.5, "ResetRange")
 		end
 	elseif args:IsSpellID(64529, 62997) then	-- Plasma Blast
 		timerPlasmaBlastCD:Start()
