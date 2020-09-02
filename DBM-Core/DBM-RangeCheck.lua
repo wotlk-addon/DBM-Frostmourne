@@ -528,35 +528,47 @@ function onUpdate(self, elapsed)
 	local color
 	local j = 0
 	self:ClearLines()
-	self:SetText(DBM_CORE_RANGECHECK_HEADER:format(self.range), 1, 1, 1)
+	self:SetText((self.bossMode
+		and DBM_CORE_BOSS_RANGE_HEADER
+		or DBM_CORE_RANGECHECK_HEADER
+	):format(self.range), 1, 1, 1)
 	if initRangeCheck(self.range) then
-		if GetNumRaidMembers() > 0 then
-			for i = 1, GetNumRaidMembers() do
-				local uId = "raid"..i
-				if not UnitIsUnit(uId, "player") and not UnitIsDeadOrGhost(uId) and self.checkFunc(uId, self.range) and (not self.filter or self.filter(uId)) then
-					j = j + 1
-					color = RAID_CLASS_COLORS[select(2, UnitClass(uId))] or NORMAL_FONT_COLOR
-					local icon = GetRaidTargetIndex(uId)
-					local text = icon and ("|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_%d:0|t %s"):format(icon, UnitName(uId)) or UnitName(uId)
-					self:AddLine(text, color.r, color.g, color.b)
-					if j >= 5 then
-						break
-					end
-				end	
+		if self.bossMode then
+			local uId = self.bossUnit
+			if not UnitIsDead(uId) and enemyCheckFunc(uId, self.range) and (not self.filter or self.filter(uId)) then
+				color = NORMAL_FONT_COLOR
+				local text = UnitName(uId)
+				self:AddLine(text, color.r, color.g, color.b)
 			end
-		elseif GetNumPartyMembers() > 0 then
-			for i = 1, GetNumPartyMembers() do
-				local uId = "party"..i
-				if not UnitIsUnit(uId, "player") and not UnitIsDeadOrGhost(uId) and self.checkFunc(uId, self.range) and (not self.filter or self.filter(uId)) then
-					j = j + 1
-					color = RAID_CLASS_COLORS[select(2, UnitClass(uId))] or NORMAL_FONT_COLOR
-					local icon = GetRaidTargetIndex(uId)
-					local text = icon and ("|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_%d:0|t %s"):format(icon, UnitName(uId)) or UnitName(uId)
-					self:AddLine(text, color.r, color.g, color.b)
-					if j >= 5 then
-						break
-					end
-				end	
+		else
+			if GetNumRaidMembers() > 0 then
+				for i = 1, GetNumRaidMembers() do
+					local uId = "raid"..i
+					if not UnitIsUnit(uId, "player") and not UnitIsDeadOrGhost(uId) and self.checkFunc(uId, self.range) and (not self.filter or self.filter(uId)) then
+						j = j + 1
+						color = RAID_CLASS_COLORS[select(2, UnitClass(uId))] or NORMAL_FONT_COLOR
+						local icon = GetRaidTargetIndex(uId)
+						local text = icon and ("|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_%d:0|t %s"):format(icon, UnitName(uId)) or UnitName(uId)
+						self:AddLine(text, color.r, color.g, color.b)
+						if j >= 5 then
+							break
+						end
+					end	
+				end
+			elseif GetNumPartyMembers() > 0 then
+				for i = 1, GetNumPartyMembers() do
+					local uId = "party"..i
+					if not UnitIsUnit(uId, "player") and not UnitIsDeadOrGhost(uId) and self.checkFunc(uId, self.range) and (not self.filter or self.filter(uId)) then
+						j = j + 1
+						color = RAID_CLASS_COLORS[select(2, UnitClass(uId))] or NORMAL_FONT_COLOR
+						local icon = GetRaidTargetIndex(uId)
+						local text = icon and ("|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_%d:0|t %s"):format(icon, UnitName(uId)) or UnitName(uId)
+						self:AddLine(text, color.r, color.g, color.b)
+						if j >= 5 then
+							break
+						end
+					end	
+				end
 			end
 		end
 	else
@@ -571,7 +583,7 @@ function onUpdate(self, elapsed)
 end
 
 do
-	local rotation, pixelsperyard, prevNumPlayers, range, isInSupportedArea
+	local rotation, pixelsperyard, prevNumPlayers, range, bossMode, isInSupportedArea
 	local function createDot(id)
 		local dot = radarFrame:CreateTexture("DBMRangeCheckRadarDot"..id, "OVERLAY")
 		dot:SetTexture([[Interface\AddOns\DBM-Core\textures\blip]])
@@ -650,9 +662,15 @@ do
 			pixelsperyard = min(radarFrame:GetWidth(), radarFrame:GetHeight()) / (frame.range * 3)
 			radarFrame.circle:SetSize(frame.range * pixelsperyard * 2, frame.range * pixelsperyard * 2)
 
-			if frame.range ~= (range or 0) then
+			if frame.range ~= (range or 0) or bossMode ~= frame.bossMode then
 				range = frame.range
-				radarFrame.text:SetText(DBM_CORE_RANGERADAR_HEADER:format(range))
+				bossMode = frame.bossMode
+				radarFrame.text:SetText(
+					(bossMode
+						and DBM_CORE_BOSS_RANGE_HEADER
+						or DBM_CORE_RANGERADAR_HEADER
+					):format(range)
+				)
 			end
 
 			local mapName = GetMapInfo()
@@ -672,12 +690,14 @@ do
 				rotation = (2 * math.pi) - GetPlayerFacing()
 				local numPlayers = 0
 				local unitID = "raid%d"
-				if GetNumRaidMembers() > 0 then
-					unitID = "raid%d"
-					numPlayers = GetNumRaidMembers()
-				elseif GetNumPartyMembers() > 0 then
-					unitID = "party%d"
-					numPlayers = GetNumPartyMembers()
+				if not bossMode then
+					if GetNumRaidMembers() > 0 then
+						unitID = "raid%d"
+						numPlayers = GetNumRaidMembers()
+					elseif GetNumPartyMembers() > 0 then
+						unitID = "party%d"
+						numPlayers = GetNumPartyMembers()
+					end
 				end
 				if numPlayers < (prevNumPlayers or 0) then
 					for i=numPlayers, prevNumPlayers do
@@ -724,10 +744,16 @@ do
 				end
 
 				local playerTooClose = false
-				for i,v in pairs(dots) do
-					if v.tooClose then
+				if bossMode then
+					if enemyCheckFunc(frame.bossUnit, frame.range) then
 						playerTooClose = true
-						break;
+					end
+				else
+					for i,v in pairs(dots) do
+						if v.tooClose then
+							playerTooClose = true
+							break;
+						end
 					end
 				end
 				if UnitIsDeadOrGhost("player") then
@@ -828,15 +854,79 @@ do
 	})
 end
 
-do
-	local bandages = {21991, 34721, 34722, 53049, 53050, 53051}  -- you should have one of these bandages in your cache
+local HarmItems = {
+	[5] = {
+		37727, -- Ruby Acorn
+	},
+	[8] = {
+		34368, -- Attuned Crystal Cores
+		33278, -- Burning Torch
+	},
+	[10] = {
+		32321, -- Sparrowhawk Net
+	},
+	[15] = {
+		33069, -- Sturdy Rope
+	},
+	[20] = {
+		10645, -- Gnomish Death Ray
+	},
+	[25] = {
+		24268, -- Netherweave Net
+		41509, -- Frostweave Net
+		31463, -- Zezzak's Shard
+	},
+	[30] = {
+		835, -- Large Rope Net
+		7734, -- Six Demon Bag
+		34191, -- Handful of Snowflakes
+	},
+	[35] = {
+		24269, -- Heavy Netherweave Net
+		18904, -- Zorbin's Ultra-Shrinker
+	},
+	[40] = {
+		28767, -- The Decapitator
+	},
+	[45] = {
+		32698, -- Wrangling Rope
+	},
+	[60] = {
+		32825, -- Soul Cannon
+		37887, -- Seeds of Nature's Wrath
+	},
+	[80] = {
+		35278, -- Reinforced Net
+	},
+}
 
-	checkFuncs[15] = function(uId)
-		for i, v in ipairs(bandages) do
+function enemyCheckFunc(uId, range)
+	local items = HarmItems[range]
+	if items then
+		for i, v in ipairs(items) do
 			if IsItemInRange(v, uId) == 1 then
 				return true
 			elseif IsItemInRange(v, uId) == 0 then
 				return false
+			end
+		end
+	end
+	return false
+end
+
+do
+	local bandages = {21991, 34721, 34722, 53049, 53050, 53051}  -- you should have one of these bandages in your cache
+
+	checkFuncs[15] = function(uId)
+		if UnitIsEnemy("player", uId) then
+			return enemyCheckFunc(uId, 15)
+		else
+			for i, v in ipairs(bandages) do
+				if IsItemInRange(v, uId) == 1 then
+					return true
+				elseif IsItemInRange(v, uId) == 0 then
+					return false
+				end
 			end
 		end
 	end
@@ -845,7 +935,7 @@ end
 ---------------
 --  Methods  --
 ---------------
-function rangeCheck:Show(range, filter)
+function rangeCheck:Show(range, filter, bossUnit)
 	SetMapToCurrentZone()--Set map to current zone before checking other stuff, work around annoying bug i hope?
 	if type(range) == "function" then -- the first argument is optional
 		return self:Show(nil, range)
@@ -855,6 +945,10 @@ function rangeCheck:Show(range, filter)
 	frame = frame or createFrame()
 	radarFrame = radarFrame or createRadarFrame()
 	frame.checkFunc = checkFuncs[range] or error(("Range \"%d yd\" is not supported."):format(range), 2)
+	frame.previousRange = frame.range or range
+	frame.previouslyShown = true
+	frame.bossUnit = bossUnit
+	frame.bossMode = bossUnit ~= nil
 	frame.range = range
 	frame.filter = filter
 	if DBM.Options.RangeFrameFrames == "text" or DBM.Options.RangeFrameFrames == "both" or DBM.MapSizes[mapName] == nil or (DBM.MapSizes[mapName] and DBM.MapSizes[mapName][GetCurrentMapDungeonLevel()] == nil) then
@@ -867,8 +961,23 @@ function rangeCheck:Show(range, filter)
 	end
 end
 
+function rangeCheck:SetBossRange(range, bossUnit)
+	self:Show(range, nil, bossUnit)
+end
+
+function rangeCheck:DisableBossMode()
+	if frame and frame.bossMode then
+		frame.bossMode = false
+		frame.bossUnit = nil
+		frame.range = frame.previousRange
+		if not frame.previouslyShown then
+			self:Hide()
+		end
+	end
+end
+
 function rangeCheck:Hide()
-	if frame then frame:Hide() end
+	if frame then frame.previouslyShown = false; frame:Hide() end
 	if radarFrame then radarFrame:Hide() end
 end
 

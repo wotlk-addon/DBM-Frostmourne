@@ -80,6 +80,16 @@ local function warnNapalmShellTargets()
 	napalmShellIcon = 7
 end
 
+local function getBossUnitByCreatureId(creatureId)
+	for i = 1, 4 do
+		local uId = "boss"..i
+		if mod:GetUnitCreatureId(uId) == creatureId then
+			return uId
+		end
+	end
+	return "target"
+end
+
 function mod:OnCombatStart(delay)
     self.vb.phase = 0
     hardmode = false
@@ -125,6 +135,12 @@ function mod:Flames()	-- Flames
 		self:ScheduleMethod(25, "ToFlames3")
 		self:ScheduleMethod(26, "ToFlames2")
 		self:ScheduleMethod(27, "ToFlames1")
+	end
+end
+
+function mod:ResetRange() -- After boss range was set
+	if self.Options.RangeFrame then
+		DBM.RangeCheck:DisableBossMode()
 	end
 end
 -- SOUND FUNCTIONS
@@ -187,6 +203,10 @@ function mod:SPELL_CAST_START(args)
 		timerNextShockblast:Start()
 		if self.Options.PlaySoundOnShockBlast then
 			PlaySoundFile("Sound\\Creature\\HoodWolf\\HoodWolfTransformPlayer01.wav")
+		end
+		if self.Options.RangeFrame then
+			DBM.RangeCheck:SetBossRange(15, getBossUnitByCreatureId(33432))
+			self:ScheduleMethod(5, "ResetRange")
 		end
 	elseif args:IsSpellID(64529, 62997) then	-- Plasma Blast
 		timerPlasmaBlastCD:Start()

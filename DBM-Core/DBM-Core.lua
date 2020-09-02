@@ -58,10 +58,10 @@ f:SetScript("OnUpdate", fCLFix)
 --  Globals/Default Options  --
 -------------------------------
 DBM = {
-	Revision = ("$Revision: 5040 $"):sub(12, -3),
-	Version = "5.04",
-	DisplayVersion = "5.04 DBM-Frostmourne. Original edit by Sariyo.", -- the string that is shown as version
-	ReleaseRevision = 5040 -- the revision of the latest stable version that is available (for /dbm ver2)
+	Revision = ("$Revision: 5050 $"):sub(12, -3),
+	Version = "5.05",
+	DisplayVersion = "5.05 DBM-Frostmourne. Original edit by Sariyo.", -- the string that is shown as version
+	ReleaseRevision = 5050 -- the revision of the latest stable version that is available (for /dbm ver2)
 }
 
 DBM_SavedOptions = {}
@@ -820,6 +820,15 @@ SlashCmdList["DBMRANGE"] = function(msg)
 		else
 			DBM.RangeCheck:Show(10)
 		end
+	end
+end
+SLASH_DBMBOSSRANGE1 = "/bossrange"
+SlashCmdList["DBMBOSSRANGE"] = function(msg)
+	local r = tonumber(msg)
+	if not r then
+		DBM.RangeCheck:DisableBossMode()
+	else
+		DBM.RangeCheck:SetBossRange(r or 10, "target")
 	end
 end
 
