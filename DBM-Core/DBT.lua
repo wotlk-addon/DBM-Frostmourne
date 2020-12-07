@@ -105,7 +105,7 @@ options = {
 	},
 	Texture = {
 		type = "string",
-		default = "Interface\\AddOns\\DBM-Core\\textures\\default.tga",
+		default = "Interface\\AddOns\\DBM-Core\\textures\\normTex.tga",
 	},
 	StartColorR = {
 		type = "number",
@@ -149,7 +149,7 @@ options = {
 	},
 	Width = {
 		type = "number",
-		default = 183,
+		default = 207,
 	},
 	Scale = {
 		type = "number",

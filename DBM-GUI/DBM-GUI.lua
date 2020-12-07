@@ -38,7 +38,7 @@
 --
 --
 
-local revision =("$Revision: 4379 $"):sub(12, -3) 
+local revision =("$Revision: 5060 $"):sub(12, -3) 
 local FrameTitle = "DBM_GUI_Option_"	-- all GUI frames get automatically a name FrameTitle..ID
 
 local PanelPrototype = {}
@@ -424,7 +424,12 @@ do
 		slider:SetMinMaxValues(low, high)
 		slider:SetValueStep(step)
 		slider:SetWidth(framewidth or 180)
-		getglobal(FrameTitle..self:GetCurrentID()..'Text'):SetText(text)
+		local panelId = self:GetCurrentID()
+		slider.SetText = function(self, ...)
+			getglobal(FrameTitle..panelId..'Text'):SetText(...)
+		end
+		slider:SetText(text)
+		-- getglobal(FrameTitle..self:GetCurrentID()..'Text'):SetText(text)
 		slider:SetScript("OnValueChanged", onValueChanged(getglobal(FrameTitle..self:GetCurrentID()..'Text'), text))
 		self:SetLastObj(slider)
 		return slider
@@ -2023,24 +2028,49 @@ do
 		for _, catident in pairs(mod.categorySort) do
 			category = mod.optionCategories[catident]
 			local catpanel = panel:CreateArea(mod.localization.cats[catident], nil, nil, true)
-			local button, lastButton, addSpacer
+			local comp, lastComp, addSpacer
 			for _,v in ipairs(category) do
 				if v == DBM_OPTION_SPACER then
 					addSpacer = true
 				elseif type(mod.Options[v]) == "boolean" then
-					lastButton = button
-					button = catpanel:CreateCheckButton(mod.localization.options[v], true)
+					lastComp = comp
+					comp = catpanel:CreateCheckButton(mod.localization.options[v], true)
 					if addSpacer then
-						button:SetPoint("TOPLEFT", lastButton, "BOTTOMLEFT", 0, -6)
+						comp:SetPoint("TOPLEFT", lastComp, "BOTTOMLEFT", 0, -6)
 						addSpacer = false
 					end
-					button:SetScript("OnShow",  function(self) 
+					comp:SetScript("OnShow",  function(self) 
 						self:SetChecked(mod.Options[v]) 
 					end)
-					button:SetScript("OnClick", function(self) 
+					comp:SetScript("OnClick", function(self) 
 						mod.Options[v] = not mod.Options[v]
 						if mod.optionFuncs and mod.optionFuncs[v] then mod.optionFuncs[v]() end
 					end)
+				elseif mod.sliders and mod.sliders[v] and type(mod.Options[v]) == "number" then
+					local sliderInfo = mod.sliders[v]
+					lastComp = comp
+
+					local localizedText = mod.localization.options[v]
+					local val = mod.Options[v]
+
+					comp = catpanel:CreateSlider(
+						localizedText:format(val),
+						sliderInfo.minValue,
+						sliderInfo.maxValue,
+						sliderInfo.valueStep
+					)
+
+					comp:SetPoint("TOPLEFT", lastComp, "BOTTOMLEFT", addSpacer and 120 or 0, -30)
+					comp:SetScript("OnShow", function(self)
+						self:SetValue(val)
+					end)
+					local temp = comp
+					comp:HookScript("OnValueChanged", function(self)
+						mod.Options[v] = self:GetValue()
+						temp:SetText(localizedText:format(self:GetValue()))
+					end)
+
+					addSpacer = false
 				end
 			end
 			catpanel:AutoSetDimension()

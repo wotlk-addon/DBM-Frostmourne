@@ -683,7 +683,7 @@ do
 					v.dot:Hide()
 				end
 				for i = 1, 8 do
-					charms[i]:Hide()	
+					charms[i]:Hide()
 				end
 			else
 				isInSupportedArea = true

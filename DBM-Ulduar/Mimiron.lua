@@ -1,7 +1,7 @@
 local mod	= DBM:NewMod("Mimiron", "DBM-Ulduar")
 local L		= mod:GetLocalizedStrings()
 
-mod:SetRevision(("$Revision: 4338 $"):sub(12, -3))
+mod:SetRevision(("$Revision: 5060 $"):sub(12, -3))
 mod:SetCreatureID(33432)
 mod:SetUsedIcons(1, 2, 3, 4, 5, 6, 7, 8)
 
@@ -28,12 +28,12 @@ local warnBombSpawn				= mod:NewAnnounce("WarnBombSpawn", 3)
 local warnFrostBomb				= mod:NewSpellAnnounce(64623, 3)
 
 local warnFlamesSoon			= mod:NewSoonAnnounce(64566, 3) 
-local warnFlamesIn5Sec			= mod:NewSpecialWarning("WarningFlamesIn5Sec", 3)
+local warnFlamesIn5Sec			= mod:NewSpecialWarning("WarningFlamesIn5Sec", 3) -- can be adjusted 0-10s
 
 local warnShockBlast			= mod:NewSpecialWarning("WarningShockBlast", nil, false)
 mod:AddBoolOption("ShockBlastWarningInP1", mod:IsMelee(), "announce")
 mod:AddBoolOption("ShockBlastWarningInP4", mod:IsMelee(), "announce")
-local warnDarkGlare				= mod:NewSpecialWarningSpell(63293)
+local warnLaserBarrage				= mod:NewSpecialWarningSpell(63293)
 
 local enrage 					= mod:NewBerserkTimer(900)
 local timerHardmode				= mod:NewTimer(610, "TimerHardmode", 64582)
@@ -43,10 +43,10 @@ local timerP3toP4				= mod:NewTimer(30, "TimeToPhase4")
 local timerProximityMines		= mod:NewCDTimer(25, 63027)
 local timerShockBlast			= mod:NewCastTimer(63631)
 local timerSpinUp				= mod:NewCastTimer(4, 63414)
-local timerDarkGlareCast		= mod:NewCastTimer(10, 63274)
-local timerNextDarkGlare		= mod:NewNextTimer(31, 63274)
+local timerLaserBarrageCast		= mod:NewCastTimer(10, 63274)
+local timerLaserBarrageCD		= mod:NewNextTimer(31, 63274)
 local timerNextShockblast		= mod:NewNextTimer(40, 63631)
-local timerPlasmaBlastCD		= mod:NewCDTimer(30, 64529)
+local timerPlasmaBlastCD		= mod:NewCDTimer(30, 64529) -- Random between 30 and 45s
 local timerShell				= mod:NewBuffActiveTimer(6, 63666)
 local timerFlameSuppressant		= mod:NewCastTimer(75, 64570)
 local timerFlameSuppressantCD	= mod:NewCDTimer(10, 65192)
@@ -62,8 +62,10 @@ mod:AddBoolOption("AutoChangeLootToFFA", true)
 mod:AddBoolOption("SetIconOnNapalm", true)
 mod:AddBoolOption("SetIconOnPlasmaBlast", true)
 mod:AddBoolOption("RangeFrame")
-mod:AddBoolOption("WarnFlamesIn5Sec", true)
-mod:AddBoolOption("SoundWarnCountingFlames", true)
+
+mod:AddOptionSpacer()
+mod:AddSliderOption("WarnFlamesIn5Sec", 0, 10, 1, 5)
+mod:AddSliderOption("SoundWarnCountingFlames", 0, 10, 1, 5)
 
 local hardmode = false
 local lootmethod, masterlooterRaidID
@@ -89,7 +91,7 @@ function mod:OnCombatStart(delay)
 	
 	enrage:Start(-delay)
 	self:NextPhase()
-	timerPlasmaBlastCD:Start(24-delay) 
+	timerPlasmaBlastCD:Start(24-delay)
 	if DBM:GetRaidRank() == 2 then
 		lootmethod, _, masterlooterRaidID = GetLootMethod()
 	end
@@ -116,42 +118,20 @@ function mod:Flames()	-- Flames
 	timerNextFlames:Start()
 	self:ScheduleMethod(28, "Flames")
 	warnFlamesSoon:Schedule(18)
+
+	local flamesIn = self.Options.WarnFlamesIn5Sec
+	local soundCountdown = self.Options.SoundWarnCountingFlames
+
 	if self.Options.WarnFlamesIn5Sec then
-		warnFlamesIn5Sec:Schedule(23)
+		warnFlamesIn5Sec:Schedule(28 - flamesIn, flamesIn) -- 23 if 5s
 	end
-	if self.Options.SoundWarnCountingFlames then
-		self:ScheduleMethod(23, "ToFlames5")
-		self:ScheduleMethod(24, "ToFlames4")
-		self:ScheduleMethod(25, "ToFlames3")
-		self:ScheduleMethod(26, "ToFlames2")
-		self:ScheduleMethod(27, "ToFlames1")
-	end
+	mod:CountdownFinalSeconds(soundCountdown > 0, 28, soundCountdown)
 end
 
 function mod:ResetRange() -- After boss range was set
 	if self.Options.RangeFrame then
 		DBM.RangeCheck:DisableBossMode()
 	end
-end
--- SOUND FUNCTIONS
-function mod:ToFlames5()
-	PlaySoundFile("Interface\\AddOns\\DBM-Core\\sounds\\5.mp3", "Master")
-end
-
-function mod:ToFlames4()
-	PlaySoundFile("Interface\\AddOns\\DBM-Core\\sounds\\4.mp3", "Master")
-end
-
-function mod:ToFlames3()
-	PlaySoundFile("Interface\\AddOns\\DBM-Core\\sounds\\3.mp3", "Master")
-end
-
-function mod:ToFlames2()
-	PlaySoundFile("Interface\\AddOns\\DBM-Core\\sounds\\2.mp3", "Master")
-end
-
-function mod:ToFlames1()
-	PlaySoundFile("Interface\\AddOns\\DBM-Core\\sounds\\1.mp3", "Master")
 end
 
 function mod:BombBot()	-- Bomb Bot
@@ -163,7 +143,7 @@ end
 
 local function show_warning_for_spinup()
 	if is_spinningUp then
-		warnDarkGlare:Show()
+		warnLaserBarrage:Show()
 		if mod.Options.PlaySoundOnDarkGlare then
 			PlaySoundFile("Sound\\Creature\\HoodWolf\\HoodWolfTransformPlayer01.wav")
 		end
@@ -234,8 +214,8 @@ function mod:SPELL_CAST_SUCCESS(args)
 	elseif args:IsSpellID(63414) then			-- Spinning UP (before Dark Glare)
 		is_spinningUp = true
 		timerSpinUp:Start()
-		timerDarkGlareCast:Schedule(4)
-		timerNextDarkGlare:Schedule(14)			-- 4 (cast spinup) + 10 sec (cast dark glare)
+		timerLaserBarrageCast:Schedule(4)
+		timerLaserBarrageCD:Schedule(14)			-- 4 (cast spinup) + 10 sec (cast dark glare)
 		DBM:Schedule(0.15, show_warning_for_spinup)	-- wait 0.15 and then announce it, otherwise it will sometimes fail
 		lastSpinUp = GetTime()
 	
@@ -257,9 +237,9 @@ function mod:OnSync(event, args)
 	if event == "SpinUpFail" then
 		is_spinningUp = false
 		timerSpinUp:Cancel()
-		timerDarkGlareCast:Cancel()
-		timerNextDarkGlare:Cancel()
-		warnDarkGlare:Cancel()
+		timerLaserBarrageCast:Cancel()
+		timerLaserBarrageCD:Cancel()
+		warnLaserBarrage:Cancel()
 	elseif event == "Phase2" and self.vb.phase == 1 then -- alternate localized-dependent detection
 		self:NextPhase()
 	elseif event == "Phase3" and self.vb.phase == 2 then
@@ -283,7 +263,7 @@ function mod:NextPhase()
 		timerFlameSuppressant:Stop()
 		timerPlasmaBlastCD:Stop()
 		timerP1toP2:Start()
-		timerNextDarkGlare:Schedule(43)
+		timerLaserBarrageCD:Schedule(43)
 		if self.Options.HealthFrame then
 			DBM.BossHealth:Clear()
 			DBM.BossHealth:AddBoss(33651, L.MobPhase2)
@@ -299,8 +279,8 @@ function mod:NextPhase()
 		if self.Options.AutoChangeLootToFFA and DBM:GetRaidRank() == 2 then
 			SetLootMethod("freeforall")
 		end
-		timerDarkGlareCast:Cancel()
-		timerNextDarkGlare:Cancel()
+		timerLaserBarrageCast:Cancel()
+		timerLaserBarrageCD:Cancel()
 		timerNextFrostBomb:Cancel()
 		timerP2toP3:Start()
 		timerBombBotSpawn:Start(34)
@@ -322,7 +302,7 @@ function mod:NextPhase()
 		self:UnscheduleMethod("BombBot")
 		timerP3toP4:Start()
 		timerProximityMines:Start(34)
-		timerNextDarkGlare:Start(72)
+		timerLaserBarrageCD:Start(72)
 		if self.Options.HealthFramePhase4 or self.Options.HealthFrame then
 			DBM.BossHealth:Show(L.name)
 			DBM.BossHealth:AddBoss(33670, L.MobPhase3)
@@ -355,15 +335,9 @@ function mod:CHAT_MSG_MONSTER_YELL(msg)
 		timerNextFlames:Start(6)
 		self:ScheduleMethod(6, "Flames")
 		if self.Options.WarnFlamesIn5Sec then
-			warnFlamesIn5Sec:Schedule(1) 
+			warnFlamesIn5Sec:Schedule(1, 5) 
 		end
-		if self.Options.SoundWarnCountingFlames then
-			self:ScheduleMethod(1, "ToFlames5")
-			self:ScheduleMethod(2, "ToFlames4")
-			self:ScheduleMethod(3, "ToFlames3")
-			self:ScheduleMethod(4, "ToFlames2")
-			self:ScheduleMethod(5, "ToFlames1")
-		end
+		mod:CountdownFinalSeconds(self.Options.SoundWarnCountingFlames, 6, 5)
 		timerNextShockblast:Start(37)
 
 	elseif (msg == L.YellKilled or msg:find(L.YellKilled)) then -- register kill
@@ -372,7 +346,7 @@ function mod:CHAT_MSG_MONSTER_YELL(msg)
 		timerNextFlames:Stop()
 		self:UnscheduleMethod("Flames")
 		timerNextFrostBomb:Stop()
-		timerNextDarkGlare:Stop()
+		timerLaserBarrageCD:Stop()
 		timerProximityMines:Stop()
 		warnFlamesSoon:Cancel()
 		warnFlamesIn5Sec:Cancel()

@@ -109,6 +109,7 @@ function mod:SPELL_CAST_START(args)
 		warnBoneSpike:Show()
 		timerBoneSpike:Start()
 		timerBoneSpikeUp:Start()
+		PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\castingbonespikes.mp3")
 	end
 end
 

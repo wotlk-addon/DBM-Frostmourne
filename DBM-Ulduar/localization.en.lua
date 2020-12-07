@@ -397,7 +397,7 @@ L:SetWarningLocalization{
 	MagneticCore		= ">%s< has Magnetic Core",
 	WarningShockBlast	= "Shock Blast - Run away",
 	WarnBombSpawn		= "Bomb Bot spawned",
-	WarningFlamesIn5Sec = "Flames in 5 sec.",
+	WarningFlamesIn5Sec = "Flames in %d sec.",
 }
 
 L:SetTimerLocalization{
@@ -423,8 +423,8 @@ L:SetOptionLocalization{
 	RangeFrame				= "Show range frame in Phase 1 (6 yards)",
 	SetIconOnNapalm			= DBM_CORE_AUTO_ICONS_OPTION_TEXT:format(65026),
 	SetIconOnPlasmaBlast	= DBM_CORE_AUTO_ICONS_OPTION_TEXT:format(62997),
-	WarnFlamesIn5Sec 		= "Show special warning: Flames in 5 sec.",
-	SoundWarnCountingFlames = "Play a 5 second audio countdown for next flames"
+	WarnFlamesIn5Sec 		= "Show special warning: Flames in %d sec. 0 = off",
+	SoundWarnCountingFlames = "Play an %d second audio countdown for next flames. 0 = off"
 }
 
 L:SetMiscLocalization{

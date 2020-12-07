@@ -14,9 +14,11 @@ mod:RegisterEvents(
 	"SPELL_AURA_APPLIED_DOSE",
 	"SPELL_AURA_REFRESH",
 	"SPELL_AURA_REMOVED",
-	"UNIT_HEALTH"
+	"UNIT_HEALTH",
+	"CHAT_MSG_RAID_BOSS_EMOTE"
 )
 
+local gooEmote						= "%s cast Malleable Goo!"
 local warnSlimePuddle				= mod:NewSpellAnnounce(70341, 2)
 local warnUnstableExperimentSoon	= mod:NewSoonAnnounce(70351, 3)
 local warnUnstableExperiment		= mod:NewSpellAnnounce(70351, 4)
@@ -42,6 +44,8 @@ local specWarnMalleableGooCast		= mod:NewSpecialWarningSpell(72295, false)
 local specWarnOozeVariable			= mod:NewSpecialWarningYou(70352)		-- Heroic Ability
 local specWarnGasVariable			= mod:NewSpecialWarningYou(70353)		-- Heroic Ability
 local specWarnUnboundPlague			= mod:NewSpecialWarningYou(72856)		-- Heroic Ability
+
+local specWarnMalleableGooSoon		= mod:NewSpecialWarning("Malleable Goo Soon")
 
 local timerGaseousBloat				= mod:NewTargetTimer(20, 70672)			-- Duration of debuff
 local timerSlimePuddleCD			= mod:NewCDTimer(35, 70341)				-- Approx
@@ -69,6 +73,7 @@ mod:AddBoolOption("UnboundPlagueIcon")					-- icon on the player with active buf
 mod:AddBoolOption("GooArrow")
 mod:AddBoolOption("YellOnMalleableGoo", true, "announce")
 mod:AddBoolOption("YellOnUnbound", true, "announce")
+mod:AddBoolOption("SpecWarnMalleableGooSoon")
 mod:AddBoolOption("BypassLatencyCheck", false)--Use old scan method without syncing or latency check (less reliable but not dependant on other DBM users in raid)
 
 local warned_preP2 = false
@@ -199,11 +204,13 @@ function mod:SPELL_CAST_SUCCESS(args)
 		warnChokingGasBomb:Show()
 		specWarnChokingGasBomb:Show()
 		timerChokingGasBombCD:Start()
-	elseif args:IsSpellID(72855, 72856, 70911) then
+		PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\gasbomb.mp3")
+	elseif args:IsSpellID(74281, 72615, 72295, 74280, 72458, 72874, 72873, 72550, 72549, 72548, 72297, 70853) then
 		timerUnboundPlagueCD:Start()
 	elseif args:IsSpellID(72615, 72295, 74280, 74281) then
 		warnMalleableGoo:Show()
 		specWarnMalleableGooCast:Show()
+		PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\malleable.mp3")
 		if mod:IsDifficulty("heroic10") or mod:IsDifficulty("heroic25") then
 			timerMalleableGooCD:Start(20)
 		else
@@ -321,6 +328,36 @@ function mod:UNIT_HEALTH(uId)
 		warned_preP3 = true
 		warnPhase3Soon:Show()	
 	end
+end
+
+local function plaintext(msg)
+	local hex = "[0-9a-fA-F]";
+	local byte = hex .. hex;
+	local rgba = byte .. byte .. byte .. byte;
+
+	return msg:gsub("|c" .. rgba, ""):gsub("|r", ""):gsub("|T.-|t", "");
+end
+
+-- Malleable goo fix
+function mod:CHAT_MSG_RAID_BOSS_EMOTE(msg)
+	msg = plaintext(msg)
+	local testSpecialWarning = mod:NewSpecialWarning("%s")
+	if msg == gooEmote then
+		warnMalleableGoo:Show()
+		specWarnMalleableGooCast:Show()
+		timerMalleableGooCD:Start(28)
+		PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\malleable.mp3")
+        --soundMalleableGoo:Play(soundfile)
+    	--testSpecialWarning:Schedule(23, "Test Malleable Soon")
+        if self.Options.SpecWarnMalleableGooSoon then
+        	specWarnMalleableGooSoon:Schedule(23)
+    		self:ScheduleMethod(23, "MalleableSoon") 
+		end
+	end
+end
+
+function mod:MalleableSoon()
+	specWarnMalleableGooSoon:Show()      
 end
 
 function mod:OnSync(msg, target)

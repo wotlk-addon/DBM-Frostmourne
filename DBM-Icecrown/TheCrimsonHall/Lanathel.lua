@@ -43,6 +43,7 @@ local timerBloodThirst				= mod:NewBuffActiveTimer(10, 71474)
 local timerEssenceoftheBloodQueen	= mod:NewBuffActiveTimer(60, 71473)
 
 local berserkTimer					= mod:NewBerserkTimer(330)
+local berserkTimerLordaeron			= mod:NewTimer(300, "Berserk Timer Lordaeron", nil, false)
 
 local soundSwarmingShadows			= mod:NewSound(71266)
 
@@ -64,6 +65,7 @@ end
 
 function mod:OnCombatStart(delay)
 	berserkTimer:Start(-delay)
+	berserkTimerLordaeron:Start(-delay)
 	timerFirstBite:Start(-delay)
 	timerNextPactDarkfallen:Start(15-delay)
 	timerNextSwarmingShadows:Start(-delay)
@@ -90,6 +92,7 @@ function mod:SPELL_AURA_APPLIED(args)
 		pactTargets[#pactTargets + 1] = args.destName
 		if args:IsPlayer() then
 			specWarnPactDarkfallen:Show()
+			PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\link.mp3")
 		end
 		if self.Options.SetIconOnDarkFallen then--Debuff doesn't actually last 30 seconds
 			self:SetIcon(args.destName, pactIcons, 28)--it lasts forever, but if you still have it after 28 seconds
@@ -194,7 +197,8 @@ function mod:CHAT_MSG_RAID_BOSS_EMOTE(msg, _, _, _, target)
 		timerNextSwarmingShadows:Start()
 		if target == UnitName("player") then
 			specWarnSwarmingShadows:Show()
-			soundSwarmingShadows:Play()
+			-- soundSwarmingShadows:Play() -- Original sound file config
+			PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\runaway.mp3")
 		end
 		if self.Options.SwarmingShadowsIcon then
 			self:SetIcon(target, 8, 6)

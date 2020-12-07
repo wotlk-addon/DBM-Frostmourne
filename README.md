@@ -1,13 +1,10 @@
-# Grab the latest version [here](https://github.com/ajseward/DBM-Frostmourne/releases)
+# Grab the latest version [here](https://github.com/jvdnbus/DBM-Frostmourne/releases)
 The master branch is used for development
 
 # DBM-Frostmourne
 Originally based on [DBM for Warmane - Icecrown](https://github.com/Ayaro1/DBM_Warmane_Icecrown). Most edits done by Sariyo, Gjeneth, Arrj, Nimloth, Zbruennig and anyone else mentioned in the changelog below.
 
 A version of WotLK DBM with accurate timers for Warmane servers. Please see the Release tab to find the latest stable version.
-
-### [LUA Diff between version 5.00 (the initial commit) and the original 3.3.5 DBM](https://github.com/ajseward/DBM-Frostmourne/tree/compare-to-dbm)
-
 
 
 # Changelog 
@@ -17,6 +14,37 @@ A version of WotLK DBM with accurate timers for Warmane servers. Please see the 
 * Due to some form of spell batching / spell queuing, there is a small amount of randomness on a lot of boss abilities. 
 * * Most of these are marked as CDs
 * For example: Frost Blast on Kel'Thuzad, Locust Swarm (Cast, not the duration) on Anub'Rekhan, Noth's first Blink, and Eonar's Gift are the most random.
+
+# 5.08-Outlaw
+Incorporated [changes made by Sariyo (his 5.06 and 5.07) to Icecrown Citadel and Halion](https://github.com/Ayaro1/DBM_Warmane_Icecrown/blob/master/DBM_Warmane_Icecrown_Changelog.txt).
+
+# 5.06-Outlaw
+### General
+* Possibility to countdown from 10 to 1
+* GUI sliders fixed
+
+# Ulduar
+  ### Mimiron
+  * Sliders in options to adjust countdown of Flames.
+
+# 5.051-Outlaw
+### General
+* Versioning (5051) runs separate from forked repo.
+
+# Ulduar
+  ### Mimiron
+  * More pronounced flames soon announcement.
+  ### Iron Council
+  * Overload uses boss range mode.
+
+
+# 5.05-Outlaw
+### General
+* Adds a boss range mode. (Stay x yards away from boss or die from an explosion of sorts)
+
+# Ulduar
+  ### Mimiron
+  * Shock Blast makes use of boss range mode
 
 # 5.04 
 ### General

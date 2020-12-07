@@ -85,7 +85,8 @@ local timerTrapCD		 	= mod:NewCDTimer(15.5, 73539)
 local timerRestoreSoul 		= mod:NewCastTimer(40, 73650)
 local timerRoleplay			= mod:NewTimer(162, "TimerRoleplay", 72350)
 
-local berserkTimer			= mod:NewBerserkTimer(900)
+local berserkTimer				= mod:NewBerserkTimer(900)
+local berserkTimerLordaeron		= mod:NewTimer(735, "Berserk Timer Lordaeron", nil, false)
 
 local soundDefile			= mod:NewSound(72762)
 
@@ -280,6 +281,7 @@ function mod:SPELL_CAST_START(args)
 		warnInfest:Show()
 		specWarnInfest:Show()
 		timerInfestCD:Start()
+		PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\infest.mp3")
 	elseif args:IsSpellID(72762) then -- Defile
 		if self.Options.LKBugWorkaround then
 			self:ScheduleMethod(0.1, "OldDefileTarget")
@@ -339,6 +341,7 @@ function mod:SPELL_CAST_SUCCESS(args)
 		lastPlagueCast = GetTime()
 		if args:IsPlayer() then
 			specWarnNecroticPlague:Show()
+			PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\necro.mp3")
 		end
 		if self.Options.NecroticPlagueIcon then
 			self:SetIcon(args.destName, 5, 5)
@@ -348,6 +351,7 @@ function mod:SPELL_CAST_SUCCESS(args)
 		specwarnSoulreaper:Show(args.destName)
 		timerSoulreaper:Start(args.destName)
 		timerSoulreaperCD:Start()
+		PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\soulreaper.mp3")
 		if args:IsPlayer() then
 			specWarnSoulreaper:Show()
 		end
@@ -534,6 +538,7 @@ function mod:NextPhase()
 	self.vb.phase = self.vb.phase + 1
 	if self.vb.phase == 1 then
 		berserkTimer:Start()
+		berserkTimerLordaeron:Start()
 		warnShamblingSoon:Schedule(15)
 		timerShamblingHorror:Start(20)
 		timerDrudgeGhouls:Start(10)

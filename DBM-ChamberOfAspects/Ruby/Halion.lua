@@ -228,6 +228,7 @@ function mod:CHAT_MSG_MONSTER_YELL(msg)
 			warningMeteor:Show()
 			timerMeteorCast:Start()--7 seconds from boss yell the meteor impacts.
 			timerMeteorCD:Start()
+			PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\meteor.mp3")
 		end
 		if mod:LatencyCheck() then
 			self:SendSync("Meteor")
@@ -261,6 +262,7 @@ function mod:OnSync(msg, target)
 	elseif msg == "Meteor" then
 		if self.Options.AnnounceAlternatePhase then
 			warningMeteor:Show()
+			PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\meteor.mp3")
 			timerMeteorCast:Start()
 			timerMeteorCD:Start()
 		end

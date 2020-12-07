@@ -88,7 +88,7 @@ function mod:OnCombatStart(delay)
 			self:ScheduleMethod(29, "ToMC1")
 		end
 	end
-	timerDominateMindCD:Start(-13-delay)  -- Custom adjustment to Heroic25
+	timerDominateMindCD:Start(-11.5-delay)  -- Custom adjustment to Heroic25
 	if self.Options.RemoveDruidBuff then  -- Edit to automaticly remove Mark/Gift of the Wild on entering combat
 		mod:ScheduleMethod(24, "RemoveBuffs")
 	end
@@ -290,6 +290,7 @@ function mod:SPELL_SUMMON(args)
 		if time() - lastSpirit > 5 then
 			warnSummonSpirit:Show()
 			timerSummonSpiritCD:Start()
+			PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\spirits.mp3")
 			lastSpirit = time()
 		end
 	end

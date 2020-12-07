@@ -58,10 +58,10 @@ f:SetScript("OnUpdate", fCLFix)
 --  Globals/Default Options  --
 -------------------------------
 DBM = {
-	Revision = ("$Revision: 5051 $"):sub(12, -3),
-	Version = "5.05",
-	DisplayVersion = "5.05 DBM-Frostmourne-Outlaw. Original edit by Sariyo.", -- the string that is shown as version
-	ReleaseRevision = 5051 -- the revision of the latest stable version that is available (for /dbm ver2)
+	Revision = ("$Revision: 5080 $"):sub(12, -3),
+	Version = "5.08",
+	DisplayVersion = "5.08 DBM-Frostmourne-Outlaw. Original edit by Sariyo.", -- the string that is shown as version
+	ReleaseRevision = 5080 -- the revision of the latest stable version that is available (for /dbm ver2)
 }
 
 DBM_SavedOptions = {}
@@ -280,9 +280,9 @@ do
 	local argsMT = {__index = {}}
 	local args = setmetatable({}, argsMT)
 	
-	function argsMT.__index:IsSpellID(a1, a2, a3, a4)
+	function argsMT.__index:IsSpellID(a1, a2, a3, a4, a5, a6, a7, a8)
 		local v = self.spellId
-		return v == a1 or v == a2 or v == a3 or v == a4
+		return v == a1 or v == a2 or v == a3 or v == a4 or v == a5 or v == a6 or v == a7 or v == a8
 	end
 	
 	function argsMT.__index:IsPlayer()
@@ -773,6 +773,10 @@ SlashCmdList["DEADLYBOSSMODS"] = function(msg)
 		if timer > 1 then DBM:Schedule(timer - 1, SendChatMessage, DBM_CORE_ANNOUNCE_PULL:format(1), channel) end
 		DBM:Schedule(timer, SendChatMessage, DBM_CORE_ANNOUNCE_PULL_NOW, channel)
 	elseif cmd:sub(1, 5) == "arrow" then
+		if not DBM:IsInRaid() then
+			DBM:AddMsg(DBM_ARROW_NO_RAIDGROUP)
+			return false
+		end
 		local x, y = string.split(" ", cmd:sub(6):trim())
 		xNum, yNum = tonumber(x or ""), tonumber(y or "")
 		local success
@@ -807,6 +811,7 @@ SlashCmdList["DEADLYBOSSMODS"] = function(msg)
 		DBM:LoadGUI()
 	end
 end
+
 SlashCmdList["PULL"] = function(msg) SlashCmdList["DEADLYBOSSMODS"]("pull "..msg) end
 SLASH_DBMRANGE1 = "/range"
 SLASH_DBMRANGE2 = "/distance"
@@ -1516,7 +1521,7 @@ do
 							else 
 								DBM:AddMsg(DBM_CORE_UPDATEREMINDER_HEADER:match("([^\n]*)"))
 								DBM:AddMsg(DBM_CORE_UPDATEREMINDER_HEADER:match("\n(.*)"):format(displayVersion, revision))
-								DBM:AddMsg(("|HDBM:update:%s:%s|h|cff3588ff[https://github.com/ajseward/DBM-Frostmourne]"):format(displayVersion, revision))
+								DBM:AddMsg(("|HDBM:update:%s:%s|h|cff3588ff[https://github.com/jvdnbus/DBM-Frostmourne]"):format(displayVersion, revision))
 							end
 						end
 					end
@@ -1619,10 +1624,10 @@ function DBM:ShowUpdateReminder(newVersion, newRevision)
 	editBox:SetFontObject("GameFontHighlight")
 	editBox:SetTextInsets(0, 0, 0, 1)
 	editBox:SetFocus()
-	editBox:SetText("https://github.com/ajseward/DBM-Frostmourne")
+	editBox:SetText("https://github.com/jvdnbus/DBM-Frostmourne")
 	editBox:HighlightText()
 	editBox:SetScript("OnTextChanged", function(self)
-		editBox:SetText("https://github.com/ajseward/DBM-Frostmourne")
+		editBox:SetText("https://github.com/jvdnbus/DBM-Frostmourne")
 		editBox:HighlightText()
 	end)
 	local fontstring = frame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
@@ -2182,7 +2187,6 @@ do
 	ChatFrame_AddMessageEventFilter("CHAT_MSG_PARTY_LEADER", filterRaidWarning)
 end
 
-
 do
 	local old = RaidWarningFrame:GetScript("OnEvent")
 	RaidWarningFrame:SetScript("OnEvent", function(self, event, msg, ...)
@@ -2461,6 +2465,10 @@ function bossModPrototype:GetBossTarget(cid)
 			return UnitName("focustarget"), "focustarget"
 		end
 	end
+	-- Warmane Edit
+	if self:GetUnitCreatureId("boss1") == cid or UnitName("boss1") == "General Vezax" then
+		return UnitName("boss1target"), "boss1target"
+	end
 end
 
 function bossModPrototype:GetThreatTarget(cid)
@@ -2680,6 +2688,26 @@ do
 			{
 				text = self.localization.warnings[text],
 				color = DBM.Options.WarningColors[color or 1] or DBM.Options.WarningColors[1],
+				option = optionName or text,
+				mod = self,
+				icon = (type(icon) == "number" and select(3, GetSpellInfo(icon))) or icon,
+			},
+			mt
+		)
+		if optionName == false then
+			obj.option = nil
+		else
+			self:AddBoolOption(optionName or text, optionDefault, "announce")
+		end
+		table.insert(self.announces, obj)
+		return obj
+	end
+
+	function bossModPrototype:NewAnnounceCustom(text, color, icon, optionDefault, optionName)
+		local obj = setmetatable(
+			{
+				text = self.localization.warnings[text],
+				color = {r = 0.00, g = 1.00, b = 0.00},
 				option = optionName or text,
 				mod = self,
 				icon = (type(icon) == "number" and select(3, GetSpellInfo(icon))) or icon,
@@ -3286,6 +3314,61 @@ do
 			spellName = GetSpellInfo(spellId)
 		end
 		return pformat(DBM_CORE_AUTO_TIMER_TEXTS[timerType], spellName)
+	end
+
+	function bossModPrototype:CountdownSound(value)
+		PlaySoundFile("Interface\\AddOns\\DBM-Core\\sounds\\" .. value .. ".mp3", "Master")
+	end
+
+	function bossModPrototype:CountdownSound10()
+		self:CountdownSound(10)
+	end
+
+	function bossModPrototype:CountdownSound9()
+		self:CountdownSound(9)
+	end
+
+	function bossModPrototype:CountdownSound8()
+		self:CountdownSound(8)
+	end
+
+	function bossModPrototype:CountdownSound7()
+		self:CountdownSound(7)
+	end
+
+	function bossModPrototype:CountdownSound6()
+		self:CountdownSound(6)
+	end
+
+	function bossModPrototype:CountdownSound5()
+		self:CountdownSound(5)
+	end
+
+	function bossModPrototype:CountdownSound4()
+		self:CountdownSound(4)
+	end
+
+	function bossModPrototype:CountdownSound3()
+		self:CountdownSound(3)
+	end
+
+	function bossModPrototype:CountdownSound2()
+		self:CountdownSound(2)
+	end
+
+	function bossModPrototype:CountdownSound1()
+		self:CountdownSound(1)
+	end
+
+	function bossModPrototype:CountdownFinalSeconds(optionEnabled, targetValue, length) -- counts down to 1
+		if optionEnabled then
+			for i = length or 5, 1, -1 do
+				local method = "CountdownSound" .. i
+				if self[method] then
+					self:ScheduleMethod(targetValue - i, method)
+				end
+			end
+		end
 	end
 end
 
