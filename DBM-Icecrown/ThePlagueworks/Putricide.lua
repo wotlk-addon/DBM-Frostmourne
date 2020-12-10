@@ -57,12 +57,21 @@ local timerPotions					= mod:NewBuffActiveTimer(30, 73122)
 local timerMutatedPlagueCD			= mod:NewCDTimer(10, 72451)				-- 10 to 11
 local timerUnboundPlagueCD			= mod:NewNextTimer(60, 72856)
 local timerUnboundPlague			= mod:NewBuffActiveTimer(12, 72856)		-- Heroic Ability: we can't keep the debuff 60 seconds, so we have to switch at 12-15 seconds. Otherwise the debuff does to much damage!
+-- local ttsUnboundPlagueCD  = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\unboundPlague", "TTS Unbound Plague Countdown", true)
+-- local ttsUnboundPlagueCDOffset = 7.1
+local ttsChoking = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\choking.mp3", "TTS Choking call", true)
+local ttsMalleableGoo = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\goo.mp3", "TTS Malleable Goo call", true)
+local ttsGreenOoze = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\greenOoze.mp3", "TTS Ooze Variable call", mod:IsMelee() or mod:IsRanged())
+local ttsRedOoze = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\redOoze.mp3", "TTS Gas Variable call", mod:IsMelee() or mod:IsRanged())
+local ttsPing = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\ping.mp3", "TTS unbound plague on you ping", mod:IsMelee())
+local tts83percent = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\83percent.mp3", "TTS 83percent call", true)
+local tts37percent = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\37percent.mp3", "TTS 37percent call", true)
 
 -- buffs from "Drink Me"
 local timerMutatedSlash				= mod:NewTargetTimer(20, 70542)
 local timerRegurgitatedOoze			= mod:NewTargetTimer(20, 70539)
 
-local berserkTimer					= mod:NewBerserkTimer(600)
+local berserkTimer					= mod:NewBerserkTimer(480)
 
 local soundGaseousBloat 			= mod:NewSound(72455)
 
@@ -90,7 +99,8 @@ function mod:OnCombatStart(delay)
 	warned_preP3 = false
 	self.vb.phase = 1
 	if mod:IsDifficulty("heroic10") or mod:IsDifficulty("heroic25") then
-		timerUnboundPlagueCD:Start(10-delay)
+		timerUnboundPlagueCD:Start(20-delay)
+		-- ttsUnboundPlagueCD:Schedule(20-delay-ttsUnboundPlagueCDOffset)
 	end
 end
 
@@ -146,6 +156,7 @@ function mod:SPELL_CAST_START(args)
 		timerSlimePuddleCD:Cancel()
 		timerChokingGasBombCD:Cancel()
 		timerUnboundPlagueCD:Cancel()
+		-- ttsUnboundPlagueCD:Cancel()
 	elseif args:IsSpellID(72842, 72843) then		--Volatile Experiment (heroic phase change begin)
 		warnVolatileExperiment:Show()
 		warnUnstableExperimentSoon:Cancel()
@@ -154,6 +165,7 @@ function mod:SPELL_CAST_START(args)
 		timerSlimePuddleCD:Cancel()
 		timerChokingGasBombCD:Cancel()
 		timerUnboundPlagueCD:Cancel()
+		-- ttsUnboundPlagueCD:Cancel()
 	elseif args:IsSpellID(72851, 72852) then		--Create Concoction (Heroic phase change end)
 		if mod:IsDifficulty("heroic10") or mod:IsDifficulty("heroic25") then
 			self:ScheduleMethod(40, "NextPhase")	--May need slight tweaking +- a second or two
@@ -180,13 +192,16 @@ function mod:NextPhase()
 		timerChokingGasBombCD:Start(15)
 		if mod:IsDifficulty("heroic10") or mod:IsDifficulty("heroic25") then
 			timerUnboundPlagueCD:Start(50)
+			-- ttsUnboundPlagueCD:Schedule(50-ttsUnboundPlagueCDOffset)
 		end
 	elseif self.vb.phase == 3 then
 		timerSlimePuddleCD:Start(15)
 		timerMalleableGooCD:Start(9)
-		timerChokingGasBombCD:Start(12)
+		-- timerChokingGasBombCD:Start(12)
+		timerChokingGasBombCD:Start(35.5)
 		if mod:IsDifficulty("heroic10") or mod:IsDifficulty("heroic25") then
 			timerUnboundPlagueCD:Start(50)
+			-- ttsUnboundPlagueCD:Schedule(50-ttsUnboundPlagueCDOffset)
 		end
 	end
 end
@@ -204,13 +219,13 @@ function mod:SPELL_CAST_SUCCESS(args)
 		warnChokingGasBomb:Show()
 		specWarnChokingGasBomb:Show()
 		timerChokingGasBombCD:Start()
-		PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\gasbomb.mp3")
-	elseif args:IsSpellID(74281, 72615, 72295, 74280, 72458, 72874, 72873, 72550, 72549, 72548, 72297, 70853) then
+		ttsChoking:Play()
+	elseif args:IsSpellID(72855, 72856, 70911) then
 		timerUnboundPlagueCD:Start()
 	elseif args:IsSpellID(72615, 72295, 74280, 74281) then
 		warnMalleableGoo:Show()
 		specWarnMalleableGooCast:Show()
-		PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\malleable.mp3")
+		ttsMalleableGoo:Play()
 		if mod:IsDifficulty("heroic10") or mod:IsDifficulty("heroic25") then
 			timerMalleableGooCD:Start(20)
 		else
@@ -257,10 +272,12 @@ function mod:SPELL_AURA_APPLIED(args)
 	elseif args:IsSpellID(70352, 74118) then	--Ooze Variable
 		if args:IsPlayer() then
 			specWarnOozeVariable:Show()
+			ttsGreenOoze:Play()
 		end
 	elseif args:IsSpellID(70353, 74119) then	-- Gas Variable
 		if args:IsPlayer() then
 			specWarnGasVariable:Show()
+			ttsRedOoze:Play()
 		end
 	elseif args:IsSpellID(72855, 72856, 70911) then	 -- Unbound Plague
 		warnUnboundPlague:Show(args.destName)
@@ -270,6 +287,7 @@ function mod:SPELL_AURA_APPLIED(args)
 		if args:IsPlayer() then
 			specWarnUnboundPlague:Show()
 			timerUnboundPlague:Start()
+			ttsPing:Play()
 			if self.Options.YellOnUnbound then
 				SendChatMessage(L.YellUnbound, "SAY")
 			end
@@ -322,9 +340,11 @@ end
 --values subject to tuning depending on dps and his health pool
 function mod:UNIT_HEALTH(uId)
 	if self.vb.phase == 1 and not warned_preP2 and self:GetUnitCreatureId(uId) == 36678 and UnitHealth(uId) / UnitHealthMax(uId) <= 0.83 then
+		tts83percent:Play()
 		warned_preP2 = true
 		warnPhase2Soon:Show()	
 	elseif self.vb.phase == 2 and not warned_preP3 and self:GetUnitCreatureId(uId) == 36678 and UnitHealth(uId) / UnitHealthMax(uId) <= 0.38 then
+		tts37percent:Play()
 		warned_preP3 = true
 		warnPhase3Soon:Show()	
 	end
@@ -346,7 +366,7 @@ function mod:CHAT_MSG_RAID_BOSS_EMOTE(msg)
 		warnMalleableGoo:Show()
 		specWarnMalleableGooCast:Show()
 		timerMalleableGooCD:Start(28)
-		PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\malleable.mp3")
+		ttsMalleableGoo:Play()
         --soundMalleableGoo:Play(soundfile)
     	--testSpecialWarning:Schedule(23, "Test Malleable Soon")
         if self.Options.SpecWarnMalleableGooSoon then

@@ -55,7 +55,12 @@
 								</Offset>
 							</Anchor>
 						</Anchors>
-						<NormalTexture name="$parentTextureNormal" file="Interface\PaperDollInfoFrame\UI-Character-Skills-BarBorder"/>
+						<NormalTexture name="$parentTextureNormal" file="Interface\PaperDollInfoFrame\UI-Character-Skills-BarBorder"/>		<!-- Interface\PaperDollInfoFrame\UI-Character-Skills-BarBorder -->
+						<Backdrop edgeFile="Interface\Tooltips\UI-Tooltip-Border">
+							<EdgeSize>
+								<AbsValue val="12"/>
+							</EdgeSize>
+						</Backdrop>
 					</Button>
 				</Frames>
 				<BarTexture name="$parentTextureBar" file="Interface\PaperDollInfoFrame\UI-Character-Skills-Bar"/>

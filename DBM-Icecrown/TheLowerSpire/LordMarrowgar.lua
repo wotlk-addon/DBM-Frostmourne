@@ -29,7 +29,7 @@ local timerWhirlwind		= mod:NewBuffActiveTimer(31, 69076)
 local timerWhirlwindStart	= mod:NewTimer(3, "Whirlwind starts in...")
 local timerBoned			= mod:NewAchievementTimer(8, 4610, "AchievementBoned")
 
-local berserkTimer			= mod:NewBerserkTimer(600)
+local berserkTimer			= mod:NewBerserkTimer(360)
 
 local soundWhirlwind = mod:NewSound(69076)
 mod:AddBoolOption("SetIconOnImpale", true)

@@ -53,6 +53,13 @@ local berserkTimer				= mod:NewBerserkTimer(600)
 local berserkTimerLordaeron		= mod:NewTimer(390, "Berserk Timer Lordaeron", nil, false)
 
 local soundBlisteringCold = mod:NewSound(70123)
+
+local ttsBeacon = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\beaconOnYou.mp3", "TTS Beacon callout", true)
+local ttsHighChilledToBone = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\highChilledToBone.mp3", "TTS High Chilled callout", true)
+local ttsUnchained = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\unchained.mp3", "TTS Unchained callout", true)
+local ttsFrostBreathCountdown = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\frostbreath_in_5.mp3", "TTS frost breath countdown", mod:IsTank())
+local ttsFrostBreathCountdownOffset = 6.8
+
 mod:AddBoolOption("SetIconOnFrostBeacon", true)
 mod:AddBoolOption("SetIconOnUnchainedMagic", true)
 mod:AddBoolOption("ClearIconsOnAirphase", true)
@@ -145,20 +152,23 @@ function mod:OnCombatEnd()
 	if self.Options.RangeFrame then
 		DBM.RangeCheck:Hide()
 	end
+	ttsFrostBreathCountdown:Cancel()
 end
 
 function mod:SPELL_CAST_START(args)
 	if args:IsSpellID(69649, 71056, 71057, 71058) or args:IsSpellID(73061, 73062, 73063, 73064) then--Frost Breath
 		warnFrostBreath:Show()
 		timerNextFrostBreath:Start()
+		ttsFrostBreathCountdown:Schedule(22-ttsFrostBreathCountdownOffset)
 	end
-end	
+end
 
 function mod:SPELL_AURA_APPLIED(args)
 	if args:IsSpellID(70126) then
 		beaconTargets[#beaconTargets + 1] = args.destName
 		if args:IsPlayer() then
 			specWarnFrostBeacon:Show()
+			ttsBeacon:Play()
 		end
 		if self.vb.phase == 1 and self.Options.SetIconOnFrostBeacon then
 			table.insert(beaconIconTargets, DBM:GetRaidUnitId(args.destName))
@@ -185,6 +195,7 @@ function mod:SPELL_AURA_APPLIED(args)
 		unchainedTargets[#unchainedTargets + 1] = args.destName
 		if args:IsPlayer() then
 			specWarnUnchainedMagic:Show()
+			ttsUnchained:Play()
 		end
 		if self.Options.SetIconOnUnchainedMagic then
 			self:SetIcon(args.destName, unchainedIcons)
@@ -200,15 +211,16 @@ function mod:SPELL_AURA_APPLIED(args)
 		if args:IsPlayer() then
 			warnChilledtotheBone:Show(args.amount or 1)
 			timerChilledtotheBone:Start()
-			if (args.amount or 1) >= 4 then
+			if (args.amount or 1) >= 6 then
 				specWarnChilledtotheBone:Show(args.amount)
+				ttsHighChilledToBone:Play()
 			end
 		end
 	elseif args:IsSpellID(69766) then	--Instability (casters)
 		if args:IsPlayer() then
 			warnInstability:Show(args.amount or 1)
 			timerInstability:Start()
-			if (args.amount or 1) >= 2 then
+			if (args.amount or 1) >= 4 then
 				specWarnInstability:Show(args.amount)
 			end
 		end
@@ -247,7 +259,7 @@ function mod:SPELL_CAST_SUCCESS(args)
 		timerNextBlisteringCold:Start()
 		soundBlisteringCold:Play()
 	end
-end	
+end
 
 function mod:SPELL_AURA_REMOVED(args)
 	if args:IsSpellID(69762) then
@@ -300,7 +312,7 @@ end
 function mod:UNIT_HEALTH(uId)
 	if not warned_P2 and self:GetUnitCreatureId(uId) == 36853 and UnitHealth(uId) / UnitHealthMax(uId) <= 0.38 then
 		warned_P2 = true
-		warnPhase2soon:Show()	
+		warnPhase2soon:Show()
 	end
 end
 
@@ -311,6 +323,7 @@ function mod:CHAT_MSG_MONSTER_YELL(msg)
 		end
 		warnAirphase:Show()
 		timerNextFrostBreath:Cancel()
+		ttsFrostBreathCountdown:Cancel()
 		timerUnchainedMagic:Start(55)
 		timerNextBlisteringCold:Start(80)--Not exact anywhere from 80-110seconds after airphase begin
 		timerNextAirphase:Start()

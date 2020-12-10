@@ -43,7 +43,12 @@ local timerOozeExplosion		= mod:NewCastTimer(4, 69839)
 local timerVileGasCD			= mod:NewNextTimer(30, 72272)
 
 local soundMutatedInfection		= mod:NewSound(71224)
-mod:AddBoolOption("RangeFrame", mod:IsRanged())
+
+-- slime pipes timers are broken on warmane
+local ttsSlimePipesIn = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\slimePipesIn3.mp3", "TTS Slime Pipes countdown", mod:IsRanged())
+local ttsSlimePipesInOffset = 5
+
+mod:AddBoolOption("RangeFrame", mod:IsRanged() or mod:IsHealer())
 mod:AddBoolOption("InfectionIcon", true)
 mod:AddBoolOption("TankArrow")
 
@@ -58,13 +63,16 @@ end
 
 function mod:OnCombatStart(delay)
 	timerWallSlime:Start(9-delay) -- Adjust from 25 to 9 to have a correct timer from the start
+	ttsSlimePipesIn:Schedule(9-delay-ttsSlimePipesInOffset)
 	timerSlimeSpray:Start(20-delay) -- Custom add for the first Slime Spray
 	timerVileGasCD:Start(34-delay) -- Adjusted from 22 to 34
 	self:ScheduleMethod(25-delay, "WallSlime")
 	InfectionIcon = 8
 	spamOoze = 0
-	if self.Options.RangeFrame then
-		DBM.RangeCheck:Show(10) -- Increased from 8 to 10
+	if mod:IsDifficulty("heroic10") or mod:IsDifficulty("heroic25") then
+		if self.Options.RangeFrame then
+			DBM.RangeCheck:Show(10) -- Increased from 8 to 10
+		end
 	end
 end
 
@@ -72,11 +80,21 @@ function mod:OnCombatEnd()
 	if self.Options.RangeFrame then
 		DBM.RangeCheck:Hide()
 	end
+	ttsSlimePipesIn:Cancel()
 end
+
+--this function seems rathor limited but not entirely hopeless. i imagine it only works if you or someone else targets the big ooze, but that pretty much means it's useless if kiter doesn't have dbm.
+--[[function mod:SlimeTank()
+	local target = self:GetThreatTarget(36897)
+	if not target then return end
+	self:SendSync("OozeTank", target)
+end--]]
 
 function mod:WallSlime()
 	if self:IsInCombat() then
 		timerWallSlime:Start()
+		ttsSlimePipesIn:Cancel()
+		ttsSlimePipesIn:Schedule(25-ttsSlimePipesInOffset)
 		self:UnscheduleMethod("WallSlime")
 		self:ScheduleMethod(25, "WallSlime")
 	end
@@ -156,6 +174,7 @@ function mod:SPELL_DAMAGE(args)
 	if args:IsSpellID(69761, 71212, 73026, 73027) and args:IsPlayer() then
 		specWarnRadiatingOoze:Show()
 	elseif args:GetDestCreatureID() == 36899 and args:IsSrcTypePlayer() and not args:IsSpellID(53189, 53190, 53194, 53195) then--Any spell damage except for starfall (ranks 3 and 4)
+--		self:ScheduleMethod(1, "SlimeTank")
 		if args.sourceName ~= UnitName("player") then
 			if self.Options.TankArrow then
 				DBM.Arrow:ShowRunTo(args.sourceName, 0, 0)
@@ -168,6 +187,7 @@ function mod:SWING_DAMAGE(args)
 	if args:IsPlayer() and args:GetSrcCreatureID() == 36897 then --Little ooze hitting you
 		specWarnLittleOoze:Show()
 	elseif args:GetDestCreatureID() == 36899 and args:IsSrcTypePlayer() then
+--		self:ScheduleMethod(1, "SlimeTank")
 		if args.sourceName ~= UnitName("player") then
 			if self.Options.TankArrow then
 				DBM.Arrow:ShowRunTo(args.sourceName, 0, 0)
@@ -181,3 +201,13 @@ function mod:CHAT_MSG_MONSTER_YELL(msg)
 		self:WallSlime()
 	end
 end
+
+--[[function mod:OnSync(msg, target)
+	if msg == "OozeTank" then
+		if target ~= UnitName("player") then
+			if self.Options.TankArrow then
+				DBM.Arrow:ShowRunTo(target, 0, 0)
+			end
+		end
+	end
+end--]]

@@ -2,27 +2,26 @@
 local L		= mod:GetLocalizedStrings()
 
 mod:SetRevision(("$Revision: 4435 $"):sub(12, -3))
-mod:SetCreatureID(34564)  
+mod:SetCreatureID(34564)
 
 mod:RegisterCombat("yell", L.YellPull)
 
 mod:RegisterEvents(
 	"SPELL_AURA_APPLIED",
-	"SPELL_AURA_REFRESH", 	
+	"SPELL_AURA_REFRESH",
 	"SPELL_AURA_REMOVED",
-	"SPELL_CAST_START",
-	"CHAT_MSG_RAID_BOSS_EMOTE"
+	"SPELL_CAST_START"
 )
 
 mod:SetUsedIcons(3, 4, 5, 6, 7, 8)
 
 
-mod:AddBoolOption("RemoveHealthBuffsInP3", false)
+mod:AddBoolOption("RemoveHealthBuffsInP3", true)
 
 -- Adds
 local warnAdds				= mod:NewAnnounce("warnAdds", 3, 45419)
 local timerAdds				= mod:NewTimer(45, "timerAdds", 45419)
-local Burrowed				= false 
+local Burrowed				= false
 
 -- Pursue
 local warnPursue			= mod:NewTargetAnnounce(67574, 4)
@@ -41,25 +40,15 @@ local timerEmerge			= mod:NewTimer(65, "TimerEmerge", "Interface\\AddOns\\DBM-Co
 local warnSubmerge			= mod:NewAnnounce("WarnSubmerge", 3, "Interface\\AddOns\\DBM-Core\\textures\\CryptFiendBurrow.blp")
 local warnSubmergeSoon		= mod:NewAnnounce("WarnSubmergeSoon", 1, "Interface\\AddOns\\DBM-Core\\textures\\CryptFiendBurrow.blp")
 local specWarnSubmergeSoon	= mod:NewSpecialWarning("specWarnSubmergeSoon", mod:IsTank())
-local timerSubmerge			= mod:NewTimer(75, "TimerSubmerge", "Interface\\AddOns\\DBM-Core\\textures\\CryptFiendBurrow.blp")
-
--- Submerge 2
-local warnSubmergeTwo			= mod:NewAnnounce("WarnSubmerge", 3, "Interface\\AddOns\\DBM-Core\\textures\\CryptFiendBurrow.blp")
-local warnSubmergeTwoSoon		= mod:NewAnnounce("WarnSubmergeSoon", 1, "Interface\\AddOns\\DBM-Core\\textures\\CryptFiendBurrow.blp")
-local specWarnSubmergeTwoSoon	= mod:NewSpecialWarning("specWarnSubmergeSoon", mod:IsTank())
-local timerSubmergeTwo			= mod:NewTimer(145, "2nd Submerge", "Interface\\AddOns\\DBM-Core\\textures\\CryptFiendBurrow.blp")
-
--- Extra Emerge timers
-local timerEmergeOne			= mod:NewTimer(65, "1st Emerge", "Interface\\AddOns\\DBM-Core\\textures\\CryptFiendUnBurrow.blp")
-local timerEmergeTwo			= mod:NewTimer(65, "2nd Emerge", "Interface\\AddOns\\DBM-Core\\textures\\CryptFiendUnBurrow.blp")
+local timerSubmerge			= mod:NewTimer(80, "TimerSubmerge", "Interface\\AddOns\\DBM-Core\\textures\\CryptFiendBurrow.blp")
 
 -- Phases
 local warnPhase3			= mod:NewPhaseAnnounce(3)
-local enrageTimer			= mod:NewBerserkTimer(570)	-- 9:30 ? hmpf (no enrage while submerged... this sucks)
+local enrageTimer			= mod:NewBerserkTimer(570)
 
 -- Penetrating Cold
 local specWarnPCold			= mod:NewSpecialWarningYou(68510, false)
-local timerPCold			= mod:NewBuffActiveTimer(15, 68509)
+local timerPCold			= mod:NewBuffActiveTimer(17, 68509)
 mod:AddBoolOption("SetIconsOnPCold", true)
 mod:AddBoolOption("AnnouncePColdIcons", false)
 mod:AddBoolOption("AnnouncePColdIconsRemoved", false)
@@ -69,10 +58,14 @@ local warnFreezingSlash		= mod:NewTargetAnnounce(66012, 2, nil, mod:IsHealer() o
 local timerFreezingSlash	= mod:NewCDTimer(20, 66012, nil, mod:IsHealer() or mod:IsTank())
 
 -- Shadow Strike
-local timerShadowStrike		= mod:NewNextTimer(30.5, 66134)
+local timerShadowStrike		= mod:NewNextTimer(30, 66134)
 local preWarnShadowStrike	= mod:NewSoonAnnounce(66134, 3)
 local warnShadowStrike		= mod:NewSpellAnnounce(66134, 4)
 local specWarnShadowStrike	= mod:NewSpecialWarning("SpecWarnShadowStrike", mod:IsTank())
+
+--Shadow Strike Voice Announce
+local TTSstun = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\stunIn3.mp3", "TTS stun countdown", false)
+local stunTTSOffset = 4.87
 
 function mod:OnCombatStart(delay)
 	Burrowed = false 
@@ -81,39 +74,35 @@ function mod:OnCombatStart(delay)
 	self:ScheduleMethod(10-delay, "Adds")
 	warnSubmergeSoon:Schedule(70-delay)
 	specWarnSubmergeSoon:Schedule(70-delay)
-	timerSubmerge:Start(80-delay)
-	timerEmergeOne:Schedule(80)
+	timerSubmerge:Start(-delay)
+	self:ScheduleMethod(80-delay, "Submerged")	-- since raid boss emote seems bugged for anub on warmeme
 	enrageTimer:Start(-delay)
-	timerFreezingSlash:Start(-delay)
-	warnSubmergeTwoSoon:Schedule(215)
-	specWarnSubmergeTwoSoon:Schedule(215)
-	timerSubmergeTwo:Schedule(80)
-	timerEmergeTwo:Schedule(225)
+	timerFreezingSlash:Start(15-delay)
 	if mod:IsDifficulty("heroic10") or mod:IsDifficulty("heroic25") then
-		timerShadowStrike:Start()
-		preWarnShadowStrike:Schedule(25.5-delay)
-		self:ScheduleMethod(30.5-delay, "ShadowStrike")
+		self:ShadowStrike()
 	end
 	self.vb.phase = 1
 end
 
-function mod:Adds() 
-	if self:IsInCombat() then 
-		if not Burrowed then 
-			timerAdds:Start() 
-			warnAdds:Schedule(45) 
-			self:ScheduleMethod(45, "Adds") 
-		end 
-	end 
+function mod:Adds()
+	if self:IsInCombat() then
+		if not Burrowed then
+			timerAdds:Start()
+			warnAdds:Schedule(45)
+			self:ScheduleMethod(45, "Adds")
+		end
+	end
 end
 
 function mod:ShadowStrike()
 	if self:IsInCombat() then
 		timerShadowStrike:Start()
 		preWarnShadowStrike:Cancel()
-		preWarnShadowStrike:Schedule(25.5)
+		preWarnShadowStrike:Schedule(25)
 		self:UnscheduleMethod("ShadowStrike")
-		self:ScheduleMethod(30.5, "ShadowStrike")
+		self:ScheduleMethod(30, "ShadowStrike")
+		TTSstun:Cancel()
+		TTSstun:Schedule(30.5-stunTTSOffset)
 	end
 end
 
@@ -133,7 +122,7 @@ do
 				self:SetIcon(UnitName(v), PColdIcon)
 				PColdIcon = PColdIcon - 1
 			end
-			table.wipe(PColdTargets)	
+			table.wipe(PColdTargets)
 		end
 	end
 end
@@ -160,9 +149,10 @@ function mod:SPELL_AURA_APPLIED(args)
 				self:SetPcoldIcons()--Sort and fire as early as possible once we have all targets.
 			end
 		end
-		timerPCold:Show() 
+		timerPCold:Show()
 	elseif args:IsSpellID(66012) then							-- Freezing Slash
 		warnFreezingSlash:Show(args.destName)
+		timerFreezingSlash:Cancel()
 		timerFreezingSlash:Start()
 	elseif args:IsSpellID(10278) and self:IsInCombat() then		-- Hand of Protection
 		warnHoP:Show(args.destName)
@@ -191,13 +181,15 @@ function mod:SPELL_CAST_START(args)
 		specWarnSubmergeSoon:Cancel()
 		timerEmerge:Stop()
 		timerSubmerge:Stop()
+		self:UnscheduleMethod("Submerged")
 		if self.Options.RemoveHealthBuffsInP3 then
 			mod:ScheduleMethod(0.1, "RemoveBuffs")
 		end
 		if mod:IsDifficulty("normal10") or mod:IsDifficulty("normal25") then
-			timerAdds:Cancel() 
-			warnAdds:Cancel() 
+			timerAdds:Cancel()
+			warnAdds:Cancel()
 			self:UnscheduleMethod("Adds")
+			self:UnscheduleMethod("ShadowStrike")
 		end
 	elseif args:IsSpellID(66134) then							-- Shadow Strike
 		self:ShadowStrike()
@@ -206,31 +198,38 @@ function mod:SPELL_CAST_START(args)
 	end
 end
 
-function mod:CHAT_MSG_RAID_BOSS_EMOTE(msg)
-	if msg and msg:find(L.Burrow) then
-		Burrowed = true
-		timerAdds:Cancel()
-		warnAdds:Cancel()
-		warnSubmerge:Show()
-		warnEmergeSoon:Schedule(55)
-		timerEmerge:Start()
-		timerFreezingSlash:Stop()
-	elseif msg and msg:find(L.Emerge) then
-		Burrowed = false
-		timerAdds:Start(5)
-		warnAdds:Schedule(5)
-		self:ScheduleMethod(5, "Adds")
-		warnEmerge:Show()
-		warnSubmergeSoon:Schedule(65)
-		specWarnSubmergeSoon:Schedule(65)
-		timerSubmerge:Start()
-		if mod:IsDifficulty("heroic10") or mod:IsDifficulty("heroic25") then
-			timerShadowStrike:Stop()
-			preWarnShadowStrike:Cancel()
-			self:UnscheduleMethod("ShadowStrike")
-			self:ScheduleMethod(5.5, "ShadowStrike")  -- 35-36sec after Emerge next ShadowStrike
-		end
+function mod:Submerged()
+	Burrowed = true
+	timerAdds:Cancel()
+	warnAdds:Cancel()
+	self:UnscheduleMethod("Adds")
+	warnSubmerge:Show()
+	warnEmergeSoon:Schedule(55)
+	timerEmerge:Start()
+	timerFreezingSlash:Cancel()
+	timerShadowStrike:Stop()
+	preWarnShadowStrike:Cancel()
+	self:UnscheduleMethod("ShadowStrike")
+	TTSstun:Cancel()
+	self:ScheduleMethod(65, "Emerged")
+	self:UnscheduleMethod("Submerged")
+end
+
+function mod:Emerged()			-- warmeme fix, cause boss emote can be outranged LOL
+	Burrowed = false
+	timerAdds:Start(10)
+	warnAdds:Schedule(10)
+	self:ScheduleMethod(10, "Adds")
+	warnEmerge:Show()
+	warnSubmergeSoon:Schedule(70)
+	specWarnSubmergeSoon:Schedule(70)
+	self:ScheduleMethod(80, "Submerged")
+	timerSubmerge:Start()
+	timerFreezingSlash:Start(15)
+	if mod:IsDifficulty("heroic10") or mod:IsDifficulty("heroic25") then
+		self:ShadowStrike()
 	end
+	self:UnscheduleMethod("Emerged")
 end
 
 function mod:RemoveBuffs()

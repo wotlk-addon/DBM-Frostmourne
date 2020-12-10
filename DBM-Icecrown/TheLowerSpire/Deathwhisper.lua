@@ -11,6 +11,7 @@ mod:RegisterEvents(
 	"SPELL_AURA_APPLIED_DOSE",
 	"SPELL_AURA_REMOVED",
 	"SPELL_CAST_START",
+	"SPELL_CAST_SUCCESS",
 	"SPELL_INTERRUPT",
 	"SPELL_SUMMON",
 	"SWING_DAMAGE",
@@ -29,7 +30,7 @@ local warnSummonSpirit				= mod:NewSpellAnnounce(71426, 2)
 local warnReanimating				= mod:NewAnnounce("WarnReanimating", 3)
 local warnDarkTransformation		= mod:NewSpellAnnounce(70900, 4)
 local warnDarkEmpowerment			= mod:NewSpellAnnounce(70901, 4)
-local warnPhase2					= mod:NewPhaseAnnounce(2, 1)	
+local warnPhase2					= mod:NewPhaseAnnounce(2, 1)
 local warnFrostbolt					= mod:NewCastAnnounce(72007, 2)
 local warnTouchInsignificance		= mod:NewAnnounce("WarnTouchInsignificance", 2, 71204, mod:IsTank() or mod:IsHealer())
 local warnDarkMartyrdom				= mod:NewSpellAnnounce(72499, 4)
@@ -50,14 +51,21 @@ local timerSummonSpiritCD			= mod:NewCDTimer(10, 71426, nil, false)
 local timerFrostboltCast			= mod:NewCastTimer(4, 72007)
 local timerTouchInsignificance		= mod:NewTargetTimer(30, 71204, nil, mod:IsTank() or mod:IsHealer())
 
-local berserkTimer					= mod:NewBerserkTimer(600)
+local berserkTimer					= mod:NewBerserkTimer(420)
 
+local ttsDominateMindCD = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\mindcontrolIn5.mp3", "TTS Dominate Mind Countdown", true)
+local ttsDominateMindCDOffset = 6.9
+local ttsSpiritsSpawned = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\spiritSpawned.mp3", "TTS Spirit spawn callout", true)
+local ttsOnYouRun = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\onYouRun.mp3", "TTS Spirit target callout", true)
+local ttsEquipped = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\equipped.mp3", "TTS auto equp callout", true)
+local ttsUnequipped = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\unequipped.mp3", "TTS auto unequip callout", true)
+
+mod:AddBoolOption("EnableAutoWeaponUnequipOnMC", false)
 mod:AddBoolOption("RemoveDruidBuff", true, not mod:IsTank())
 mod:AddBoolOption("SetIconOnDominateMind", true)
 mod:AddBoolOption("SetIconOnDeformedFanatic", true)
 mod:AddBoolOption("SetIconOnEmpoweredAdherent", false)
 mod:AddBoolOption("ShieldHealthFrame", true, "misc")
-mod:AddBoolOption("SoundWarnCountingMC", true)
 mod:RemoveOption("HealthFrame")
 
 
@@ -73,22 +81,20 @@ function mod:OnCombatStart(delay)
 		DBM.BossHealth:Show(L.name)
 		DBM.BossHealth:AddBoss(36855, L.name)
 		self:ScheduleMethod(0.5, "CreateShildHPFrame")
-	end		
+	end
 	berserkTimer:Start(-delay)
 	timerAdds:Start(7)
 	warnAddsSoon:Schedule(4)			-- 3sec pre-warning on start
 	self:ScheduleMethod(7, "addsTimer")
 	if not mod:IsDifficulty("normal10") then
-		timerDominateMindCD:Start(30)		-- Sometimes 1 fails at the start, then the next will be applied 70 secs after start ?? :S
-		if self.Options.SoundWarnCountingMC then
-			self:ScheduleMethod(25, "ToMC5")
-			self:ScheduleMethod(26, "ToMC4")
-			self:ScheduleMethod(27, "ToMC3")
-			self:ScheduleMethod(28, "ToMC2")
-			self:ScheduleMethod(29, "ToMC1")
+		timerDominateMindCD:Start(27.5)		-- Sometimes 1 fails at the start, then the next will be applied 70 secs after start ?? :S
+		ttsDominateMindCD:Schedule(27.5-ttsDominateMindCDOffset)
+		if mod:IsDifficulty("heroic25") and self.Options.EnableAutoWeaponUnequipOnMC then
+			-- print("DEBUG:schedule unequip")
+			self:ScheduleMethod(26.5, "unequip")
 		end
 	end
-	timerDominateMindCD:Start(-11.5-delay)  -- Custom adjustment to Heroic25
+	-- timerDominateMindCD:Start(-11.5-delay)  -- Custom adjustment to Heroic25
 	if self.Options.RemoveDruidBuff then  -- Edit to automaticly remove Mark/Gift of the Wild on entering combat
 		mod:ScheduleMethod(24, "RemoveBuffs")
 	end
@@ -100,13 +106,15 @@ end
 
 function mod:OnCombatEnd()
 	DBM.BossHealth:Clear()
+	ttsDominateMindCD:Cancel()
+	self:UnscheduleMethod("unequip")
 end
 
 do	-- add the additional Shield Bar
 	local last = 100
 	local function getShieldPercent()
 		local guid = UnitGUID("focus")
-		if mod:GetCIDFromGUID(guid) == 36855 then 
+		if mod:GetCIDFromGUID(guid) == 36855 then
 			last = math.floor(UnitMana("focus")/UnitManaMax("focus") * 100)
 			return last
 		end
@@ -153,26 +161,6 @@ function mod:addsTimer()  -- Edited add spawn timers, working for heroic mode
 	end
 end
 
-function mod:ToMC5()
-	PlaySoundFile("Interface\\AddOns\\DBM-Core\\sounds\\5.mp3", "Master")
-end
-
-function mod:ToMC4()
-	PlaySoundFile("Interface\\AddOns\\DBM-Core\\sounds\\4.mp3", "Master")
-end
-
-function mod:ToMC3()
-	PlaySoundFile("Interface\\AddOns\\DBM-Core\\sounds\\3.mp3", "Master")
-end
-
-function mod:ToMC2()
-	PlaySoundFile("Interface\\AddOns\\DBM-Core\\sounds\\2.mp3", "Master")
-end
-
-function mod:ToMC1()
-	PlaySoundFile("Interface\\AddOns\\DBM-Core\\sounds\\1.mp3", "Master")
-end
-
 function mod:TrySetTarget()
 	if DBM:GetRaidRank() >= 1 then
 		for i = 1, GetNumRaidMembers() do
@@ -195,17 +183,15 @@ do
 		warnDominateMind:Show(table.concat(dominateMindTargets, "<, >"))
 		timerDominateMind:Start()
 		timerDominateMindCD:Start()
+		if mod:IsDifficulty("heroic25") and self.Options.EnableAutoWeaponUnequipOnMC then
+			self:UnscheduleMethod("unequip")
+			self:ScheduleMethod(39, "unequip")
+		end
+		ttsDominateMindCD:Schedule(40-ttsDominateMindCDOffset)
 		table.wipe(dominateMindTargets)
 		dominateMindIcon = 6
-		if mod.Options.SoundWarnCountingMC then
-			mod:ScheduleMethod(35, "ToMC5")
-			mod:ScheduleMethod(36, "ToMC4")
-			mod:ScheduleMethod(37, "ToMC3")
-			mod:ScheduleMethod(38, "ToMC2")
-			mod:ScheduleMethod(39, "ToMC1")
-		end
 	end
-	
+
 	function mod:SPELL_AURA_APPLIED(args)
 		if args:IsSpellID(71289) then
 			dominateMindTargets[#dominateMindTargets + 1] = args.destName
@@ -215,6 +201,13 @@ do
 			end
 			self:Unschedule(showDominateMindWarning)
 			if mod:IsDifficulty("heroic10") or mod:IsDifficulty("normal25") or (mod:IsDifficulty("heroic25") and #dominateMindTargets >= 3) then
+				if mod:IsDifficulty("heroic25")
+					and self.Options.EnableAutoWeaponUnequipOnMC
+					and dominateMindTargets[1] ~= UnitName("player")
+					and dominateMindTargets[2] ~= UnitName("player")
+					and dominateMindTargets[3] ~= UnitName("player") then
+					self:equip()
+				end
 				showDominateMindWarning()
 			else
 				self:Schedule(0.9, showDominateMindWarning)
@@ -244,6 +237,46 @@ do
 	mod.SPELL_AURA_APPLIED_DOSE = mod.SPELL_AURA_APPLIED
 end
 
+function mod:unequip()
+	-- print("DEBUG: unequip() called")
+	if mod:IsTank() or mod:IsHealer() then
+		return
+	end
+
+	if GetInventoryItemID("player", 16) then
+		PickupInventoryItem(16)
+		PutItemInBackpack()
+		PickupInventoryItem(17)
+		PutItemInBackpack()
+		PickupInventoryItem(18)
+		PutItemInBackpack()
+		ttsUnequipped:Play()
+	end
+end
+
+function mod:equip()
+	if not GetInventoryItemID("player", 16) then
+		UseEquipmentSet("dps")
+		ttsEquipped:Play()
+	end
+end
+
+function mod:equip_fallback1()
+	if not GetInventoryItemID("player", 16) then
+		UseEquipmentSet("dps")
+		print("fallback1 - Please report this")
+		ttsEquipped:Play()
+	end
+end
+
+function mod:equip_fallback2()
+	if not GetInventoryItemID("player", 16) then
+		UseEquipmentSet("dps")
+		print("fallback2 - Please report this")
+		ttsEquipped:Play()
+	end
+end
+
 function mod:SPELL_AURA_REMOVED(args)
 	if args:IsSpellID(70842) then
 		self.vb.phase = 2
@@ -252,6 +285,10 @@ function mod:SPELL_AURA_REMOVED(args)
 			timerAdds:Cancel()
 			warnAddsSoon:Cancel()
 			self:UnscheduleMethod("addsTimer")
+		elseif args:IsSpellID(71289) and self.Options.EnableAutoWeaponUnequipOnMC and mod:IsDifficulty("heroic25") then
+			self:equip() -- TODO: limit it to the mindcontrolled. args:IsPlayer() didn't work? Maybe use HasFullControl() in equip()? need more data
+			self:ScheduleMethod(0.1, "equip_fallback1") -- TODO check for fallbacks
+			self:ScheduleMethod(0.5, "equip_fallback1")
 		end
 	end
 end
@@ -289,8 +326,8 @@ function mod:SPELL_SUMMON(args)
 	if args:IsSpellID(71426) then -- Summon Vengeful Shade
 		if time() - lastSpirit > 5 then
 			warnSummonSpirit:Show()
+			ttsSpiritsSpawned:Play()
 			timerSummonSpiritCD:Start()
-			PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\spirits.mp3")
 			lastSpirit = time()
 		end
 	end
@@ -299,6 +336,7 @@ end
 function mod:SWING_DAMAGE(args)
 	if args:IsPlayer() and args:GetSrcCreatureID() == 38222 then
 		specWarnVengefulShade:Show()
+		ttsOnYouRun:Play()
 	end
 end
 

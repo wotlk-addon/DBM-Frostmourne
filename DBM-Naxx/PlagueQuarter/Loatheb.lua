@@ -33,13 +33,13 @@ local sporeTimer	= 36
 function mod:OnCombatStart(delay)
 	doomCounter = 0
 	if mod:IsDifficulty("heroic25") then
-		sporeTimer = 18
+		sporeTimer = 15
 	else
 		sporeTimer = 36
 	end
 	timerSpore:Start(sporeTimer - delay)
 	warnSporeSoon:Schedule(sporeTimer - 5 - delay)
-	timerDoom:Start(120 - delay, doomCounter + 1)
+	timerDoom:Start(90 - delay, doomCounter + 1)
 end
 
 function mod:SPELL_CAST_SUCCESS(args)
@@ -52,7 +52,7 @@ function mod:SPELL_CAST_SUCCESS(args)
 		local timer = 30
 		if doomCounter >= 7 then
 			if doomCounter % 2 == 0 then timer = 17
-			else timer = 12 end
+			else timer = 14 end
 		end
 		warnDoomNow:Show(doomCounter)
 		timerDoom:Start(timer, doomCounter + 1)

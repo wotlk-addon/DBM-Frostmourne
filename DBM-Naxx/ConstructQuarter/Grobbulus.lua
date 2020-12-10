@@ -22,6 +22,7 @@ local specWarnInjection	= mod:NewSpecialWarning("SpecialWarningInjection")
 
 local timerInjection	= mod:NewTargetTimer(10, 28169)
 local timerCloud		= mod:NewNextTimer(15, 28240)
+local timerSlimeSprayCD	= mod:NewCDTimer(15, 54364)
 local enrageTimer		= mod:NewBerserkTimer(720)
 
 mod:AddBoolOption("SetIconOnInjectionTarget", true)
@@ -84,5 +85,8 @@ function mod:SPELL_CAST_SUCCESS(args)
 	if args:IsSpellID(28240) then
 		warnCloud:Show()
 		timerCloud:Start()
+	end	
+	if args:IsSpellID(54364) then
+		timerSlimeSprayCD:Start()
 	end
 end

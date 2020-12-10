@@ -41,9 +41,9 @@ local specWarnChargeNear	= mod:NewSpecialWarning("SpecialWarningChargeNear")
 local specWarnTranq			= mod:NewSpecialWarning("SpecialWarningTranq", mod:CanRemoveEnrage())
 
 local enrageTimer			= mod:NewBerserkTimer(223)
-local timerCombatStart		= mod:NewTimer(17.5, "TimerCombatStart", 2457)
-local timerNextBoss			= mod:NewTimer(190, "TimerNextBoss", 2457)
-local timerSubmerge			= mod:NewTimer(42, "TimerSubmerge", "Interface\\AddOns\\DBM-Core\\textures\\CryptFiendBurrow.blp") 
+local timerCombatStart		= mod:NewTimer(23, "TimerCombatStart", 2457)
+local timerNextBoss			= mod:NewTimer(175, "TimerNextBoss", 2457)
+local timerSubmerge			= mod:NewTimer(46, "TimerSubmerge", "Interface\\AddOns\\DBM-Core\\textures\\CryptFiendBurrow.blp") 
 local timerEmerge			= mod:NewTimer(6, "TimerEmerge", "Interface\\AddOns\\DBM-Core\\textures\\CryptFiendUnBurrow.blp")
 
 local timerBreath			= mod:NewCastTimer(5, 67650)
@@ -51,14 +51,13 @@ local timerNextStomp		= mod:NewNextTimer(20, 66330)
 local timerNextImpale		= mod:NewNextTimer(10, 67477, nil, mod:IsTank() or mod:IsHealer())
 local timerRisingAnger      = mod:NewNextTimer(20.5, 66636)
 local timerStaggeredDaze	= mod:NewBuffActiveTimer(15, 66758)
-local timerNextCrash		= mod:NewCDTimer(70, 67662) -- Original timer. The second Massive Crash should happen 70 seconds after the first
-local timerNextCrashTwo		= mod:NewCDTimer(71, 67662, "2nd Massive Crash") -- Added timer to start a second Massive Crash timer at the start of Icehowl. The second Massive Crash happens 122 seconds into the Icehowl fight
+local timerNextCrash		= mod:NewCDTimer(72, 67662) -- Original timer. The second Massive Crash should happen 70 seconds after the first
 local timerSweepCD			= mod:NewCDTimer(17, 66794, nil, mod:IsMelee())
 local timerSlimePoolCD		= mod:NewCDTimer(12, 66883, nil, mod:IsMelee())
-local timerAcidicSpewCD		= mod:NewCDTimer(21, 66819)
-local timerMoltenSpewCD		= mod:NewCDTimer(21, 66820)
-local timerParalyticSprayCD	= mod:NewCDTimer(21, 66901)
-local timerBurningSprayCD	= mod:NewCDTimer(21, 66902)
+local timerAcidicSpewCD		= mod:NewCDTimer(21, 66819)				-- seems bugged, never seen one casted
+local timerMoltenSpewCD		= mod:NewCDTimer(21, 66820)				-- seems somewhat consistant on warmeme
+local timerParalyticSprayCD	= mod:NewCDTimer(21, 66901)				-- completely random
+local timerBurningSprayCD	= mod:NewCDTimer(21, 66902)				-- completely random
 local timerParalyticBiteCD	= mod:NewCDTimer(25, 66824, nil, mod:IsTank())
 local timerBurningBiteCD	= mod:NewCDTimer(15, 66879, nil, mod:IsTank())
 
@@ -103,8 +102,7 @@ function mod:OnCombatStart(delay)
 	AcidmawDead = false
 	specWarnSilence:Schedule(37-delay)
 	if self:IsDifficulty("heroic10", "heroic25") then
-		timerNextBoss:Start(175 - delay)
-		timerNextBoss:Schedule(170)
+		timerNextBoss:Start(- delay)
 	end
 	timerNextStomp:Start(38-delay)
 	timerRisingAnger:Start(48-delay)
@@ -137,14 +135,14 @@ function mod:WormsEmerge()
 			timerSweepCD:Start(16)
 			timerParalyticSprayCD:Start(15)			
 		else
-			timerSlimePoolCD:Start(14)
-			timerParalyticBiteCD:Start(5)			
+			timerSlimePoolCD:Start(15)
+			timerParalyticBiteCD:Start(5)
 			timerAcidicSpewCD:Start(10)
 		end
 	end
 	if not DreadscaleDead then
 		if DreadscaleActive then
-			timerSlimePoolCD:Start(14)
+			timerSlimePoolCD:Start(15)
 			timerMoltenSpewCD:Start(16)
 			timerBurningBiteCD:Start(5)
 		else
@@ -152,7 +150,7 @@ function mod:WormsEmerge()
 			timerBurningSprayCD:Start(17)
 		end
 	end	
-	self:ScheduleMethod(45, "WormsSubmerge")
+	self:ScheduleMethod(46, "WormsSubmerge")
 end
 
 function mod:WormsSubmerge()
@@ -305,25 +303,33 @@ function mod:CHAT_MSG_RAID_BOSS_EMOTE(msg, _, _, _, target)
 end
 
 function mod:CHAT_MSG_MONSTER_YELL(msg)
-	if msg == L.Phase2 or msg:find(L.Phase2) then
-		self:ScheduleMethod(17, "WormsEmerge")
-		timerCombatStart:Show(11)
+	if msg == L.Phase2 or msg:find(L.Phase2) then -- Worms
+		self:ScheduleMethod(13, "WormsEmerge")
+		timerCombatStart:Show(13)
+		if self:IsDifficulty("heroic10", "heroic25") then
+			timerNextBoss:Cancel()
+			timerNextBoss:Start()
+		end
 		updateHealthFrame(2)
 		self.vb.phase = 2
 		if self.Options.RangeFrame then
-			DBM.RangeCheck:Show(10)
+			DBM.RangeCheck:Show(12)
 		end
-	elseif msg == L.Phase3 or msg:find(L.Phase3) then
+	elseif msg == L.Phase3 or msg:find(L.Phase3) then -- Icehowl
 		updateHealthFrame(3)
 		self.vb.phase = 3
 		if self:IsDifficulty("heroic10", "heroic25") then
 			enrageTimer:Start()
 		end
+		-- cancel p2 timers
+		self:UnscheduleMethod("WormsEmerge")
 		self:UnscheduleMethod("WormsSubmerge")
-		timerNextCrash:Start(52)
-		timerNextCrashTwo:Schedule(52)
-		timerNextBoss:Cancel()
 		timerSubmerge:Cancel()
+		timerEmerge:Cancel()
+		-- start p3 timers
+		timerCombatStart:Show(10)
+		timerNextCrash:Start(52)
+		timerNextBoss:Cancel()
 		if self.Options.RangeFrame then
 			DBM.RangeCheck:Hide()
 		end

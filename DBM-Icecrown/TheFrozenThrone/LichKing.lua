@@ -65,6 +65,7 @@ local specWarnTrapNear		= mod:NewSpecialWarning("SpecWarnTrapNear") --Heroic Abi
 local specWarnHarvestSouls	= mod:NewSpecialWarningSpell(74297) --Heroic Ability
 local specWarnValkyrLow		= mod:NewSpecialWarning("SpecWarnValkyrLow")
 
+-- +0.3 sec on pull
 local timerCombatStart		= mod:NewTimer(55, "TimerCombatStart", 2457)
 local timerPhaseTransition	= mod:NewTimer(62, "PhaseTransition", 72262)
 local timerSoulreaper	 	= mod:NewTargetTimer(5.1, 73797, nil, mod:IsTank() or mod:IsHealer())
@@ -89,6 +90,18 @@ local berserkTimer				= mod:NewBerserkTimer(900)
 local berserkTimerLordaeron		= mod:NewTimer(735, "Berserk Timer Lordaeron", nil, false)
 
 local soundDefile			= mod:NewSound(72762)
+
+local ttsDefileCountdown = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\defile.mp3", "TTS Defile Countdown", true)
+local ttsDefileCountdownOffset = 5.9
+local ttsDefileOnYou = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\onYouRun.mp3", "TTS Defile on you callout", true)
+local ttsPing = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\ping.mp3", "TTS Defile on you ping", true)
+local ttsSoulreaperSoon = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\soulreaperSoon.mp3", "TTS Soulreaper Callout", mod:IsTank() or mod:IsHealer())
+local ttsSoulreaperSoonOffset = 2.5
+local ttsNecroticCountdown = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\necroticIn2.mp3", "TTS Necrotic countdown", true)
+local ttsNecroticCountdownOffset = 3.7
+local ttsNecrotic = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\onYouRun.mp3", "TTS Necrotic callout", not mod:IsTank())
+local ttsInfestSoon = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\infestIn4.mp3", "TTS Infest callout", mod:IsHealer())
+local ttsInfestSoonOffset = 2
 
 mod:AddBoolOption("SpecWarnHealerGrabbed", mod:IsTank() or mod:IsHealer(), "announce")
 mod:AddBoolOption("DefileIcon")
@@ -119,6 +132,13 @@ function mod:OnCombatStart(delay)
 	LKTank = nil
 	self:NextPhase()
 	table.wipe(warnedValkyrGUIDs)
+end
+
+function mod:OnCombatEnd()
+	ttsDefileCountdown:Cancel()
+	ttsSoulreaperSoon:Cancel()
+	ttsNecroticCountdown:Cancel()
+	ttsInfestSoon:Cancel()
 end
 
 function mod:DefileTarget()
@@ -162,6 +182,8 @@ function mod:OldDefileTarget()
 		specWarnDefileCast:Show()
 		soundDefile:Play()
 		if self.Options.YellOnDefile then
+			ttsDefileOnYou:Play()
+			ttsPing:Play()
 			SendChatMessage(L.YellDefile, "SAY")
 		end
 	elseif targetname then
@@ -258,9 +280,12 @@ function mod:SPELL_CAST_START(args)
 		timerDrudgeGhouls:Cancel()
 		timerSummonValkyr:Cancel()
 		timerInfestCD:Cancel()
+		ttsInfestSoon:Cancel()
 		timerNecroticPlagueCD:Cancel()
+		ttsNecroticCountdown:Cancel()
 		timerTrapCD:Cancel()
 		timerDefileCD:Cancel()
+		ttsDefileCountdown:Cancel()
 		warnDefileSoon:Cancel()
 	elseif args:IsSpellID(72262) then -- Quake (phase transition end)
 		warnQuake:Show()
@@ -281,7 +306,8 @@ function mod:SPELL_CAST_START(args)
 		warnInfest:Show()
 		specWarnInfest:Show()
 		timerInfestCD:Start()
-		PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\infest.mp3")
+		ttsInfestSoon:Cancel()
+		ttsInfestSoon:Schedule(22.5-ttsInfestSoonOffset)
 	elseif args:IsSpellID(72762) then -- Defile
 		if self.Options.LKBugWorkaround then
 			self:ScheduleMethod(0.1, "OldDefileTarget")
@@ -291,6 +317,8 @@ function mod:SPELL_CAST_START(args)
 		warnDefileSoon:Cancel()
 		warnDefileSoon:Schedule(27)
 		timerDefileCD:Start()
+		ttsDefileCountdown:Cancel()
+		ttsDefileCountdown:Schedule(32.5-ttsDefileCountdownOffset)
 	elseif args:IsSpellID(73539) then -- Shadow Trap (Heroic)
 		timerTrapCD:Start()
 		if self.Options.LKBugWorkaround then
@@ -320,13 +348,17 @@ function mod:SPELL_CAST_START(args)
 		warnRestoreSoul:Show()
 		timerRestoreSoul:Start()
 		timerDefileCD:Start(42.5)
+		ttsDefileCountdown:Cancel()
+		ttsDefileCountdown:Schedule(42.5-ttsDefileCountdownOffset)
 		warnDefileSoon:Schedule(36)
 	elseif args:IsSpellID(72350) then -- Fury of Frostmourne
 		mod:SetWipeTime(160)--Change min wipe time mid battle to force dbm to keep module loaded for this long out of combat roleplay, hopefully without breaking mod.
 		timerRoleplay:Start()
 		timerVileSpirit:Cancel()
 		timerSoulreaperCD:Cancel()
+		ttsSoulreaperSoon:Cancel()
 		timerDefileCD:Cancel()
+		ttsDefileCountdown:Cancel()
 		timerHarvestSoulCD:Cancel()
 		berserkTimer:Cancel()
 		warnDefileSoon:Cancel()
@@ -337,11 +369,13 @@ function mod:SPELL_CAST_SUCCESS(args)
 	if args:IsSpellID(70337, 73912, 73913, 73914) then -- Necrotic Plague (SPELL_AURA_APPLIED is not fired for this spell)
 		warnNecroticPlague:Show(args.destName)
 		timerNecroticPlagueCD:Start()
+		ttsNecroticCountdown:Cancel()
+		ttsNecroticCountdown:Schedule(30-ttsNecroticCountdownOffset)
 		timerNecroticPlagueCleanse:Start()
 		lastPlagueCast = GetTime()
 		if args:IsPlayer() then
+			ttsNecrotic:Play()
 			specWarnNecroticPlague:Show()
-			PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\necro.mp3")
 		end
 		if self.Options.NecroticPlagueIcon then
 			self:SetIcon(args.destName, 5, 5)
@@ -351,7 +385,7 @@ function mod:SPELL_CAST_SUCCESS(args)
 		specwarnSoulreaper:Show(args.destName)
 		timerSoulreaper:Start(args.destName)
 		timerSoulreaperCD:Start()
-		PlaySoundFile("Interface\\Addons\\DBM-Core\\sounds\\soulreaper.mp3")
+		ttsSoulreaperSoon:Schedule(30.5-ttsSoulreaperSoonOffset)
 		if args:IsPlayer() then
 			specWarnSoulreaper:Show()
 		end
@@ -369,7 +403,6 @@ function mod:SPELL_CAST_SUCCESS(args)
 			self:SetIcon(args.destName, 7, 5)
 		end
 	elseif args:IsSpellID(68980, 74325, 74326, 74327) then -- Harvest Soul
-	--[[elseif args:IsSpellID(68980, 74325, 74326, 74327) then -- Harvest Soul]]--
 		warnHarvestSoul:Show(args.destName)
 		timerHarvestSoul:Start(args.destName)
 		timerHarvestSoulCD:Start()
@@ -380,12 +413,13 @@ function mod:SPELL_CAST_SUCCESS(args)
 			self:SetIcon(args.destName, 6, 6)
 		end
 	elseif args:IsSpellID(73654, 74295, 74296, 74297) then -- Harvest Souls (Heroic)
-	--[[elseif args:IsSpellID(73654, 74295, 74296, 74297) then -- Harvest Souls (Heroic)]]--
 		specWarnHarvestSouls:Show()
-		timerHarvestSoulCD:Start(107) -- Custom edit to make Harvest Souls timers work again
+		timerHarvestSoulCD:Start(107.5) -- Custom edit to make Harvest Souls timers work again
 		timerVileSpirit:Cancel()
 		timerSoulreaperCD:Cancel()
+		ttsSoulreaperSoon:Cancel()
 		timerDefileCD:Cancel()
+		ttsDefileCountdown:Cancel()
 		warnDefileSoon:Cancel()
 	end
 end
@@ -542,20 +576,30 @@ function mod:NextPhase()
 		warnShamblingSoon:Schedule(15)
 		timerShamblingHorror:Start(20)
 		timerDrudgeGhouls:Start(10)
-		timerNecroticPlagueCD:Start(27)
+		-- timerNecroticPlagueCD:Start(27)
+		timerNecroticPlagueCD:Start(31)
+		ttsNecroticCountdown:Schedule(31-ttsNecroticCountdownOffset)
 		if mod:IsDifficulty("heroic10") or mod:IsDifficulty("heroic25") then
 			timerTrapCD:Start()
 		end
 	elseif self.vb.phase == 2 then
 		timerSummonValkyr:Start(20)
 		timerSoulreaperCD:Start(32)
+		ttsSoulreaperSoon:Cancel()
+		ttsSoulreaperSoon:Schedule(32-ttsSoulreaperSoonOffset)
 		timerDefileCD:Start(38)
+		ttsDefileCountdown:Schedule(38-ttsDefileCountdownOffset)
 		timerInfestCD:Start(14)
+		ttsInfestSoon:Cancel()
+		ttsInfestSoon:Schedule(14-ttsInfestSoonOffset)
 		warnDefileSoon:Schedule(33)
 	elseif self.vb.phase == 3 then
 		timerVileSpirit:Start(20)
 		timerSoulreaperCD:Start(40)
+		ttsSoulreaperSoon:Cancel()
+		ttsSoulreaperSoon:Schedule(40-ttsSoulreaperSoonOffset)
 		timerDefileCD:Start(33)
+		ttsDefileCountdown:Schedule(33-ttsDefileCountdownOffset)
 		timerHarvestSoulCD:Start(14)
 		warnDefileSoon:Schedule(33)
 	end
@@ -570,6 +614,7 @@ end
 function mod:CHAT_MSG_RAID_BOSS_WHISPER(msg)--We get this whisper for all plagues, ones cast by lich king and ones from dispel jumps.
 	if msg:find(L.PlagueWhisper) and self:IsInCombat() then--We do a combat check with lich king since rotface uses the same whisper message and we only want this to work on lich king.
 		if GetTime() - lastPlagueCast > 1 then--We don't want to send sync if it came from a spell cast though, so we ignore whisper unless it was at least 1 second after a cast.
+			ttsNecrotic:Play()
 			specWarnNecroticPlague:Show()
 			self:SendSync("PlagueOn", UnitName("player"))
 		end
@@ -635,6 +680,8 @@ function mod:OnSync(msg, target)
 				specWarnDefileCast:Show()
 				soundDefile:Play()
 				if self.Options.YellOnDefile then
+					ttsDefileOnYou:Play()
+					ttsPing:Play()
 					SendChatMessage(L.YellDefile, "SAY")
 				end
 			elseif target then

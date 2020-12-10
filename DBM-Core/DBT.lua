@@ -125,7 +125,7 @@ options = {
 	},
 	EndColorG = {
 		type = "number",
-		default = 0,
+		default = 0.7,
 	},
 	EndColorB = {
 		type = "number",
@@ -149,7 +149,7 @@ options = {
 	},
 	Width = {
 		type = "number",
-		default = 207,
+		default = 240,
 	},
 	Scale = {
 		type = "number",
@@ -197,7 +197,7 @@ options = {
 	},
 	EnlargeBarsPercent = {
 		type = "number",
-		default = 0.125,
+		default = 0.05, -- 0.125 default
 	},
 	FillUpBars = {
 		type = "boolean",

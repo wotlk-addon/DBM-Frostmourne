@@ -1,7 +1,7 @@
 local mod	= DBM:NewMod("Sartharion", "DBM-ChamberOfAspects", 1)
 local L		= mod:GetLocalizedStrings()
 
-mod:SetRevision(("$Revision: 4911 $"):sub(12, -3))
+mod:SetRevision(("$Revision: 4912 $"):sub(12, -3))
 mod:SetCreatureID(28860)
 mod:SetZone()
 
@@ -29,7 +29,7 @@ mod:AddBoolOption("AnnounceFails", true, "announce")
 
 local timerShadowFissure    = mod:NewCastTimer(5, 59128)--Cast timer until Void Blast. it's what happens when shadow fissure explodes.
 local timerWall             = mod:NewCDTimer(30, 43113)
-local timerTenebron         = mod:NewTimer(26, "TimerTenebron", 61248)
+local timerTenebron         = mod:NewTimer(28, "TimerTenebron", 61248)
 local timerShadron          = mod:NewTimer(80, "TimerShadron", 58105)
 local timerVesperon         = mod:NewTimer(120, "TimerVesperon", 61251)
 
@@ -111,8 +111,8 @@ function mod:CheckDrakes(delay)
 		DBM.BossHealth:AddBoss(28860, "Sartharion")
 	end
 	if isunitdebuffed(61248) then	-- Power of Tenebron
-		timerTenebron:Start(26 - delay)
-		warnTenebron:Schedule(21 - delay)
+		timerTenebron:Start(28 - delay)
+		warnTenebron:Schedule(23 - delay)
 		timerTenebronWhelps:Start(60 - delay)
 		warnTenebronWhelps:Schedule(55 - delay)
 		if self.Options.HealthFrame then
@@ -120,10 +120,10 @@ function mod:CheckDrakes(delay)
 		end
 	end
 	if isunitdebuffed(58105) then	-- Power of Shadron
-		timerShadron:Start(74 - delay)
-		warnShadron:Schedule(69 - delay)
-		timerShadronPortal:Start(94 - delay)
-		warnShadronPortal:Schedule(89 - delay)
+		timerShadron:Start(73 - delay)
+		warnShadron:Schedule(68 - delay)
+		timerShadronPortal:Start(92 - delay)
+		warnShadronPortal:Schedule(87 - delay)
 		if self.Options.HealthFrame then
 			DBM.BossHealth:AddBoss(30451, "Shadron")
 		end

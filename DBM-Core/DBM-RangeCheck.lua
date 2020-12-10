@@ -96,7 +96,7 @@ do
 	local function setRange(self, range)
 		rangeCheck:Show(range)
 	end
-	
+
 	local sound0 = "none"
 	local sound1 = "Interface\\AddOns\\DBM-Core\\Sounds\\blip_8.ogg"
 	local sound2 = "Interface\\AddOns\\DBM-Core\\Sounds\\alarmclockbeeps.ogg"
@@ -106,7 +106,7 @@ do
 			PlaySoundFile(sound)
 		end
 	end
-	
+
 	local function setFrames(self, option)
 		DBM.Options.RangeFrameFrames = option
 		radarFrame:Hide()
@@ -131,7 +131,7 @@ do
 			radarFrame:Hide()
 		end
 	end
-	
+
 	function initializeDropdown(dropdownFrame, level, menu)
 		local info
 		if level == 1 then
@@ -286,7 +286,7 @@ do
 				info.func = setFrames
 				info.arg1 = "both"
 				info.checked = (DBM.Options.RangeFrameFrames == "both")
-				UIDropDownMenu_AddButton(info, 2)	
+				UIDropDownMenu_AddButton(info, 2)
 --[[			elseif menu == "speed" then
 				info = UIDropDownMenu_CreateInfo()
 				info.text = DBM_CORE_RANGECHECK_OPTION_SLOW
@@ -318,7 +318,7 @@ do
 			info.arg2 = sound0
 			info.checked = (DBM.Options[option] == sound0)
 			UIDropDownMenu_AddButton(info, 3)
-			
+
 			info = UIDropDownMenu_CreateInfo()
 			info.text = DBM_CORE_RANGECHECK_SOUND_1
 			info.func = setSound
@@ -326,7 +326,7 @@ do
 			info.arg2 = sound1
 			info.checked = (DBM.Options[option] == sound1)
 			UIDropDownMenu_AddButton(info, 3)
-			
+
 			info = UIDropDownMenu_CreateInfo()
 			info.text = DBM_CORE_RANGECHECK_SOUND_2
 			info.func = setSound
@@ -422,9 +422,9 @@ function createRadarFrame()
 	end]]
 	local radarFrame = CreateFrame("Frame", "DBMRangeCheckRadar", UIParent)
 	radarFrame:SetFrameStrata("DIALOG")
-	
-	
-	if (not DBM.Options.RangeFrameRadarPoint) then 
+
+
+	if (not DBM.Options.RangeFrameRadarPoint) then
 		-- probably upgrading from an older version
 		DBM.Options.RangeFrameRadarPoint = DBM.DefaultOptions.RangeFrameRadarPoint
 		DBM.Options.RangeFrameRadarX = DBM.DefaultOptions.RangeFrameRadarX
@@ -470,7 +470,7 @@ function createRadarFrame()
 	bg:SetBlendMode("BLEND")
 	bg:SetTexture(0, 0, 0, 0.3)
 	radarFrame.background = bg
-	
+
 	local circle = radarFrame:CreateTexture(nil, "ARTWORK")
 	circle:SetPoint("CENTER")
 	circle:SetTexture("Interface\\AddOns\\DBM-Core\\textures\\radar_circle.blp")
@@ -553,7 +553,7 @@ function onUpdate(self, elapsed)
 						if j >= 5 then
 							break
 						end
-					end	
+					end
 				end
 			elseif GetNumPartyMembers() > 0 then
 				for i = 1, GetNumPartyMembers() do
@@ -567,7 +567,7 @@ function onUpdate(self, elapsed)
 						if j >= 5 then
 							break
 						end
-					end	
+					end
 				end
 			end
 		end
@@ -598,12 +598,12 @@ do
 	local function setDotColor(id, class)
 		if not class then -- set to white color, dont set .class so we can try again later when class returns properly i guess?
 			dots[id].dot:SetVertexColor(unpack(vertexColors["PRIEST"]))
-			return 
+			return
 		end
 		if class and class == dots[id].class then return end
-		
+
 		dots[id].dot:SetVertexColor(unpack(vertexColors[class]))
-		dots[id].class = class		
+		dots[id].class = class
 	end
 
 	local function setDot(id, icon, filtered)
@@ -654,7 +654,7 @@ do
 			dots[id].tooClose = true
 		else
 			dots[id].tooClose = false
-		end			
+		end
 	end
 
 	function onUpdateRadar(self, elapsed)
@@ -710,7 +710,7 @@ do
 						end
 					end
 					for i=1, 8 do
-						charms[i]:Hide()	
+						charms[i]:Hide()
 					end
 				end
 				prevNumPlayers = numPlayers
@@ -776,7 +776,7 @@ do
 					v.dot:Hide()
 				end
 				for i = 1, 8 do
-					charms[i]:Hide()	
+					charms[i]:Hide()
 				end
 			end
 		end
@@ -804,7 +804,7 @@ end
 local getDistanceBetween
 do
 	local mapSizes = DBM.MapSizes
-	
+
 	function getDistanceBetween(uId, x, y)
 		local startX, startY = GetPlayerMapPosition(uId)
 		local mapName = GetMapInfo()
@@ -820,7 +820,7 @@ do
 	local function mapRangeCheck(uId, range)
 		return getDistanceBetween(uId, GetPlayerMapPosition("player")) < range
 	end
-	
+
 	function initRangeCheck(range)
 		if checkFuncs[range] ~= mapRangeCheck then
 			return true
@@ -846,7 +846,7 @@ do
 		end
 		return true -- everything ok!
 	end
-	
+
 	setmetatable(checkFuncs, {
 		__index = function(t, k)
 			return mapRangeCheck

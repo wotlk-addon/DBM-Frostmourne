@@ -38,6 +38,8 @@ local berserkTimer			= mod:NewBerserkTimer(300)
 local warnGoo				= mod:NewSpellAnnounce(72549, 4)
 local timerGooCD			= mod:NewNextTimer(10, 72549)
 
+local ttsGasSpore = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\gasspore.mp3", "TTS Gas Spore call", true)
+
 mod:AddBoolOption("RangeFrame", mod:IsRanged())
 mod:AddBoolOption("SetIconOnGasSpore", true)
 mod:AddBoolOption("AnnounceSporeIcons", false)
@@ -181,6 +183,10 @@ function mod:SPELL_AURA_APPLIED(args)
 		end
 		if args:IsPlayer() then
 			specWarnGasSpore:Show()
+			ttsGasSpore:Play()
+			if mod:IsTank() then
+				SendChatMessage("Gas Spore on TANK!", "SAY")
+			end
 		end
 		if self.Options.SetIconOnGasSpore then
 			table.insert(gasSporeIconTargets, DBM:GetRaidUnitId(args.destName))

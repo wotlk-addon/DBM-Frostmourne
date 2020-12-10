@@ -58,7 +58,7 @@ mod:AddBoolOption("LegionFlameWhisper", false, "announce")
 mod:AddBoolOption("LegionFlameRunSound", true)
 mod:AddBoolOption("LegionFlameIcon", true)
 mod:AddBoolOption("IncinerateFleshIcon", true)
-
+mod:AddBoolOption("RangeFrame")
 mod:RemoveOption("HealthFrame")
 mod:AddBoolOption("IncinerateShieldFrame", true, "misc")
 
@@ -66,6 +66,9 @@ function mod:OnCombatStart(delay)
 	if self.Options.IncinerateShieldFrame then
 		DBM.BossHealth:Show(L.name)
 		DBM.BossHealth:AddBoss(34780, L.name)
+	end
+	if self.Options.RangeFrame then
+		DBM.RangeCheck:Show(12)
 	end
 	timerPortalCD:Start(22-delay)
 	timerPortalTwo:Schedule(22)
@@ -82,6 +85,9 @@ end
 
 function mod:OnCombatEnd()
 	DBM.BossHealth:Clear()
+	if self.Options.RangeFrame then
+		DBM.RangeCheck:Hide()
+	end
 end
 
 do

@@ -50,14 +50,28 @@ local timerKineticBombCD		= mod:NewCDTimer(18, 72053, nil, mod:IsRanged())				--
 local timerShadowPrison			= mod:NewBuffActiveTimer(10, 72999)		-- Hard mode debuff
 
 local timerCombatStart			= mod:NewTimer(29, "Combat starts in...", 2457) -- Roleplay for first pull
-local berserkTimer				= mod:NewBerserkTimer(600)
+local berserkTimer				= mod:NewBerserkTimer(360)
 
 local soundEmpoweredFlames		= mod:NewSound(72040)
+
+local ttsVortexNear = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\vortexNear.mp3", "TTS Near Vortex call", true)
+
+mod:AddBoolOption("ShadowPrisonMetronom", true)
 mod:AddBoolOption("EmpoweredFlameIcon", true)
 mod:AddBoolOption("ActivePrinceIcon", false)
 mod:AddBoolOption("RangeFrame", true)
 mod:AddBoolOption("VortexArrow")
 mod:AddBoolOption("BypassLatencyCheck", false)--Use old scan method without syncing or latency check (less reliable but not dependant on other DBM users in raid)
+
+-- Shadow Prison Metronom
+local SPMFrame = CreateFrame("frame") -- triggers onupdate SPMF_do_metronom after first Shadow Prison application
+local function SPMF_do_metronom(self, elapsed) -- play sound every second
+	self.time = (self.time or 0) + elapsed
+	if self.time >= 1 then
+		PlaySoundFile("Interface\\AddOns\\DBM-Core\\sounds\\tick.mp3", "Master")
+		self.time = self.time - 1
+	end
+end
 
 local activePrince
 local glitteringSparksTargets	= {}
@@ -83,6 +97,7 @@ function mod:OnCombatEnd()
 	if self.Options.RangeFrame then
 		DBM.RangeCheck:Hide()
 	end
+	SPMFrame:SetScript("OnUpdate", nil)
 end
 
 function mod:ShockVortexTarget()
@@ -98,6 +113,7 @@ function mod:OldShockVortexTarget()
 	if not targetname then return end
 		warnShockVortex:Show(targetname)
 	if targetname == UnitName("player") then
+		ttsVortexNear:Play()
 		specWarnVortex:Show()
 	elseif targetname then
 		local uId = DBM:GetRaidUnitId(targetname)
@@ -109,6 +125,7 @@ function mod:OldShockVortexTarget()
 				x, y = GetPlayerMapPosition(uId)
 			end
 			if inRange then
+				ttsVortexNear:Play()
 				specWarnVortexNear:Show()
 				if self.Options.VortexArrow then
 					DBM.Arrow:ShowRunAway(x, y, 10, 5)
@@ -183,6 +200,9 @@ function mod:SPELL_AURA_APPLIED(args)
 			self:ScheduleMethod(4.5, "HideRange")--delay hiding range frame for a few seconds after change incase valanaar got a last second vortex cast off
 		end
 	elseif args:IsSpellID(72999) then	--Shadow Prison (hard mode)
+		if self.Options.ShadowPrisonMetronom then
+			SPMFrame:SetScript("OnUpdate", SPMF_do_metronom)
+		end
 		if args:IsPlayer() then
 			timerShadowPrison:Start()
 			if (args.amount or 1) >= 6 then	--Placeholder right now, might use a different value
@@ -253,6 +273,7 @@ function mod:OnSync(msg, target)
 						x, y = GetPlayerMapPosition(uId)
 					end
 					if inRange then
+						ttsVortexNear:Play()
 						specWarnVortexNear:Show()
 						if self.Options.VortexArrow then
 							DBM.Arrow:ShowRunAway(x, y, 10, 5)

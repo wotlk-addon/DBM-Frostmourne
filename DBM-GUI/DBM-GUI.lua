@@ -1278,6 +1278,13 @@ local function CreateOptionsMenu()
 
 		-- END Pizza Timer
 		--
+		-- Credits to whoever made this from lordaeron
+		local ttsArea = DBM_GUI_Frame:CreateArea("Timer to speech general options", nil, 120) -- one checkbox has a height of ~25
+		ttsArea.frame:SetPoint('TOPLEFT', pizzaarea.frame, "BOTTOMLEFT", 0, -20)
+		local TTSEnabled = ttsArea:CreateCheckButton("Enable TTS",  true, nil, "TTSEnabled")
+		local PullTimerCountdown = ttsArea:CreateCheckButton("Enable pull timer countdown",  true, nil, "PullTimerCountdown")
+		local PullDifficultyAnnounce = ttsArea:CreateCheckButton("Enable difficulty announce on pull",  true, nil, "PullDifficultyAnnounce")
+
 		DBM_GUI_Frame:SetMyOwnHeight()
 	end
 	do
@@ -1453,10 +1460,12 @@ local function CreateOptionsMenu()
 			end 
 		end
 
-		local iconleft = BarSetup:CreateCheckButton(L.BarIconLeft, nil, nil, nil, "IconLeft")
-		local iconright = BarSetup:CreateCheckButton(L.BarIconRight, nil, true, nil, "IconRight")
-		iconleft:SetPoint('BOTTOMRIGHT', maindummybar.frame, "TOPLEFT", -5, 5)
-		iconright:SetPoint('BOTTOMLEFT', maindummybar.frame, "TOPRIGHT", 5, 5)
+		local iconleft 	= BarSetup:CreateCheckButton(L.BarIconLeft, nil, true, nil, "IconLeft")
+		local iconright = BarSetup:CreateCheckButton(L.BarIconRight, nil, nil, nil, "IconRight")
+		local flash 	= BarSetup:CreateCheckButton(L.BarFlashing, nil, nil, nil, "Flash" ) -- name, autoplace, textleft, dbmvar, dbtvar
+		iconleft:SetPoint('BOTTOMRIGHT', maindummybar.frame, "TOPLEFT", 0, 5)
+		iconright:SetPoint('BOTTOMLEFT', maindummybar.frame, "TOPRIGHT", 0, 5)
+		flash:SetPoint('BOTTOM', maindummybar.frame, "TOP", 0, 5)
 
 		local color1 = BarSetup:CreateColorSelect(64)
 		local color2 = BarSetup:CreateColorSelect(64)
