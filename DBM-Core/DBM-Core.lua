@@ -58,10 +58,10 @@ f:SetScript("OnUpdate", fCLFix)
 --  Globals/Default Options  --
 -------------------------------
 DBM = {
-	Revision = ("$Revision: 5090 $"):sub(12, -3),
-	Version = "5.09",
-	DisplayVersion = "5.09 Frostmourne-Outlaw-Steppenwolf", -- the string that is shown as version
-	ReleaseRevision = 5090 -- the revision of the latest stable version that is available (for /dbm ver2)
+	Revision = ("$Revision: 5091 $"):sub(12, -3),
+	Version = "5.091",
+	DisplayVersion = "5.091 Frostmourne-Outlaw-Steppenwolf", -- the string that is shown as version
+	ReleaseRevision = 5091 -- the revision of the latest stable version that is available (for /dbm ver2)
 }
 
 DBM_SavedOptions = {}
@@ -448,6 +448,13 @@ do
 				args.sourceName = args.destName
 				args.sourceGUID = args.destGUID
 				args.sourceFlags = args.destFlags
+
+				if event == "SPELL_AURA_APPLIED" and args.spellId == 32182 then -- Heroism
+					local name = UnitName("player")
+					if args.destName == name then
+						PlaySoundFile("Interface\\AddOns\\DBM-Core\\sounds\\lol2.mp3", "Master")
+					end
+				end
 			elseif event == "SPELL_AURA_APPLIED_DOSE" or event == "SPELL_AURA_REMOVED_DOSE" then
 				args.auraType, args.amount = select(4, ...)
 				args.sourceName = args.destName
@@ -1973,9 +1980,11 @@ function DBM:UNIT_DIED(args)
 	if bit.band(args.destGUID:sub(1, 5), 0x00F) == 3 or bit.band(args.destGUID:sub(1, 5), 0x00F) == 5  then
 		self:OnMobKill(tonumber(args.destGUID:sub(9, 12), 16))
 	end
+	if args and args.destName == "Cupidus" and UnitInRaid(args.destName) then
+		PlaySoundFile("Interface\\AddOns\\DBM-Core\\sounds\\lol1.mp3", "Master")
+	end
 end
 DBM.UNIT_DESTROYED = DBM.UNIT_DIED
-
 
 ----------------------
 --  Timer recovery  --

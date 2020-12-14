@@ -41,9 +41,9 @@ local specWarnChargeNear	= mod:NewSpecialWarning("SpecialWarningChargeNear")
 local specWarnTranq			= mod:NewSpecialWarning("SpecialWarningTranq", mod:CanRemoveEnrage())
 
 local enrageTimer			= mod:NewBerserkTimer(223)
-local timerCombatStart		= mod:NewTimer(23, "TimerCombatStart", 2457)
-local timerNextBoss			= mod:NewTimer(175, "TimerNextBoss", 2457)
-local timerSubmerge			= mod:NewTimer(46, "TimerSubmerge", "Interface\\AddOns\\DBM-Core\\textures\\CryptFiendBurrow.blp") 
+local timerCombatStart		= mod:NewTimer(17.5, "TimerCombatStart", 2457)
+local timerNextBoss			= mod:NewTimer(190, "TimerNextBoss", 2457)
+local timerSubmerge			= mod:NewTimer(42, "TimerSubmerge", "Interface\\AddOns\\DBM-Core\\textures\\CryptFiendBurrow.blp") 
 local timerEmerge			= mod:NewTimer(6, "TimerEmerge", "Interface\\AddOns\\DBM-Core\\textures\\CryptFiendUnBurrow.blp")
 
 local timerBreath			= mod:NewCastTimer(5, 67650)
@@ -51,7 +51,8 @@ local timerNextStomp		= mod:NewNextTimer(20, 66330)
 local timerNextImpale		= mod:NewNextTimer(10, 67477, nil, mod:IsTank() or mod:IsHealer())
 local timerRisingAnger      = mod:NewNextTimer(20.5, 66636)
 local timerStaggeredDaze	= mod:NewBuffActiveTimer(15, 66758)
-local timerNextCrash		= mod:NewCDTimer(72, 67662) -- Original timer. The second Massive Crash should happen 70 seconds after the first
+local timerNextCrash		= mod:NewCDTimer(70, 67662) -- Original timer. The second Massive Crash should happen 70 seconds after the first
+local timerNextCrashTwo		= mod:NewCDTimer(71, 67662, '2nd Massive Crash') -- Added timer to start a second Massive Crash timer at the start of Icehowl. The second Massive Crash happens 122 seconds into the Icehowl fight
 local timerSweepCD			= mod:NewCDTimer(17, 66794, nil, mod:IsMelee())
 local timerSlimePoolCD		= mod:NewCDTimer(12, 66883, nil, mod:IsMelee())
 local timerAcidicSpewCD		= mod:NewCDTimer(21, 66819)				-- seems bugged, never seen one casted
@@ -102,7 +103,9 @@ function mod:OnCombatStart(delay)
 	AcidmawDead = false
 	specWarnSilence:Schedule(37-delay)
 	if self:IsDifficulty("heroic10", "heroic25") then
-		timerNextBoss:Start(- delay)
+		-- timerNextBoss:Start(- delay)
+		timerNextBoss:Start(175 - delay)
+		timerNextBoss:Schedule(170)
 	end
 	timerNextStomp:Start(38-delay)
 	timerRisingAnger:Start(48-delay)
@@ -150,7 +153,7 @@ function mod:WormsEmerge()
 			timerBurningSprayCD:Start(17)
 		end
 	end	
-	self:ScheduleMethod(46, "WormsSubmerge")
+	self:ScheduleMethod(45, "WormsSubmerge")
 end
 
 function mod:WormsSubmerge()
@@ -304,12 +307,12 @@ end
 
 function mod:CHAT_MSG_MONSTER_YELL(msg)
 	if msg == L.Phase2 or msg:find(L.Phase2) then -- Worms
-		self:ScheduleMethod(13, "WormsEmerge")
-		timerCombatStart:Show(13)
-		if self:IsDifficulty("heroic10", "heroic25") then
-			timerNextBoss:Cancel()
-			timerNextBoss:Start()
-		end
+		self:ScheduleMethod(17, "WormsEmerge")
+		timerCombatStart:Show(11)
+		-- if self:IsDifficulty("heroic10", "heroic25") then
+		-- 	timerNextBoss:Cancel()
+		-- 	timerNextBoss:Start()
+		-- end
 		updateHealthFrame(2)
 		self.vb.phase = 2
 		if self.Options.RangeFrame then
@@ -329,6 +332,7 @@ function mod:CHAT_MSG_MONSTER_YELL(msg)
 		-- start p3 timers
 		timerCombatStart:Show(10)
 		timerNextCrash:Start(52)
+		timerNextCrashTwo:Schedule(52)
 		timerNextBoss:Cancel()
 		if self.Options.RangeFrame then
 			DBM.RangeCheck:Hide()
