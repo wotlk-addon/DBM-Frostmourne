@@ -1984,7 +1984,7 @@ function DBM:UNIT_DIED(args)
 		self:OnMobKill(tonumber(args.destGUID:sub(9, 12), 16))
 	end
 	if DBM.Options.PlayOutlawSounds and DBM:IsInRaid() then
-		if args and args.destName == "Olvida" and UnitInRaid(args.destName) then
+		if args and args.destName == "Cupidus" and UnitInRaid(args.destName) then
 			PlaySoundFile("Interface\\AddOns\\DBM-Core\\sounds\\lol1.mp3", "Master")
 		end
 	end
