@@ -24,16 +24,13 @@ local timerLocustIn			= mod:NewCDTimer(80, 28785)
 local timerLocustFade 		= mod:NewBuffActiveTimer(23, 28785)
 
 mod:AddBoolOption("ArachnophobiaTimer", true, "timer")
-mod:AddBoolOption("SoundWarnCountingLocustSwarm", true)
 
 function mod:OnCombatStart(delay)
 	if mod:IsDifficulty("heroic25") then
 		timerLocustIn:Start(90 - delay)
-		mod:CountdownFinalSeconds(self.Options.SoundWarnCountingLocustSwarm, 90 - delay)
 		warningLocustSoon:Schedule(80 - delay)
 	else
 		timerLocustIn:Start(91 - delay)
-		mod:CountdownFinalSeconds(self.Options.SoundWarnCountingLocustSwarm, 91 - delay)
 		warningLocustSoon:Schedule(76 - delay)
 	end
 end
@@ -56,7 +53,6 @@ function mod:SPELL_AURA_REMOVED(args)
 	and args.auraType == "BUFF" then
 		warningLocustFaded:Show()
 		timerLocustIn:Start()
-		mod:CountdownFinalSeconds(self.Options.SoundWarnCountingLocustSwarm, 80)
 		warningLocustSoon:Schedule(62)
 	end
 end
