@@ -34,7 +34,7 @@ local timerBoilingBlood		= mod:NewNextTimer(15.5, 72441)
 local timerBloodNova		= mod:NewNextTimer(20, 73058)
 local timerCallBloodBeast	= mod:NewNextTimer(40, 72173)
 
-local enrageTimer			= mod:NewBerserkTimer(420)
+local enrageTimer			= mod:NewBerserkTimer(360)
 
 local ttsPing = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\ping.mp3", "TTS mark on you ping", select(2, UnitClass("player")) == "ROGUE" or select(2, UnitRace("player")) == "NightElf")
 local ttsVanishOnMark = mod:NewSoundFile("Interface\\AddOns\\DBM-Core\\sounds\\vanish.mp3", "TTS vanish callout on mark if rogue", select(2, UnitClass("player")) == "ROGUE")
