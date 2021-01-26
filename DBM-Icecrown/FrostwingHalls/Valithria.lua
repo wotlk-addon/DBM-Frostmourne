@@ -84,8 +84,11 @@ function mod:StartAbomTimer()
 	end
 end
 
+local isHeroic = mod:IsDifficulty("heroic10") or mod:IsDifficulty("heroic25")
+local isNormal = mod:IsDifficulty("normal10") or mod:IsDifficulty("normal25")
+
 function mod:OnCombatStart(delay)
-	if mod:IsDifficulty("heroic10") or mod:IsDifficulty("heroic25") then
+	if isHeroic then
 		berserkTimer:Start(-delay)
 	end
 	timerNextPortal:Start()
@@ -99,18 +102,35 @@ function mod:OnCombatStart(delay)
 	timerAbom:Start(5-delay)
 	table.wipe(GutSprayTargets)
 	blazingSkeleton = nil
-	timerSuppresserOne:Start(-delay)
-	timerSuppresserTwo:Schedule(69)
-	timerSuppresserThree:Schedule(124)
-	timerSuppresserFour:Schedule(179)
-	specWarnSuppresserOne:Schedule(70)
-	ttsSuppressersSpawned:Schedule(70)
-	specWarnSuppresserTwo:Schedule(129)
-	ttsSuppressersSpawned:Schedule(129)
-	specWarnSuppresserThree:Schedule(184)
-	ttsSuppressersSpawned:Schedule(184)
-	specWarnSuppresserFour:Schedule(239)
-	ttsSuppressersSpawned:Schedule(239)
+	
+	if isHeroic then
+		timerSuppresserOne:Start(-delay)
+		timerSuppresserTwo:Schedule(69)
+		timerSuppresserThree:Schedule(124)
+		timerSuppresserFour:Schedule(179)
+		specWarnSuppresserOne:Schedule(70)
+		ttsSuppressersSpawned:Schedule(70)
+		specWarnSuppresserTwo:Schedule(129)
+		ttsSuppressersSpawned:Schedule(129)
+		specWarnSuppresserThree:Schedule(184)
+		ttsSuppressersSpawned:Schedule(184)
+		specWarnSuppresserFour:Schedule(239)
+		ttsSuppressersSpawned:Schedule(239)
+	else
+		timerSuppresserOne:SetTimer(30)
+		timerSuppresserOne:Start(-delay)
+		timerSuppresserTwo:Schedule(27)
+		timerSuppresserThree:Schedule(84)
+		timerSuppresserFour:Schedule(138)
+		specWarnSuppresserOne:Schedule(30)
+		ttsSuppressersSpawned:Schedule(30)
+		specWarnSuppresserTwo:Schedule(87)
+		ttsSuppressersSpawned:Schedule(87)
+		specWarnSuppresserThree:Schedule(144)
+		ttsSuppressersSpawned:Schedule(144)
+		specWarnSuppresserFour:Schedule(198)
+		ttsSuppressersSpawned:Schedule(198)
+	end
 end
 
 function mod:OnCombatEnd()
