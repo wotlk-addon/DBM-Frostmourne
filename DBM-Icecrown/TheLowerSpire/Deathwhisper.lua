@@ -83,7 +83,7 @@ function mod:OnCombatStart(delay)
 		self:ScheduleMethod(0.5, "CreateShildHPFrame")
 	end
 	berserkTimer:Start(-delay)
-	timerAdds:Start(7)
+	timerAdds:Start(5.5)
 	warnAddsSoon:Schedule(4)			-- 3sec pre-warning on start
 	self:ScheduleMethod(7, "addsTimer")
 	if not mod:IsDifficulty("normal10") then
@@ -151,13 +151,13 @@ function mod:addsTimer()  -- Edited add spawn timers, working for heroic mode
 	timerAdds:Cancel()
 	warnAddsSoon:Cancel()
 	if mod:IsDifficulty("normal10") or mod:IsDifficulty("normal25") then
-		warnAddsSoon:Schedule(40)	-- 5 secs prewarning
-		self:ScheduleMethod(45, "addsTimer")
-		timerAdds:Start(45)
+		warnAddsSoon:Schedule(55)	-- 5 secs prewarning
+		self:ScheduleMethod(60, "addsTimer")
+		timerAdds:Start(60)
 	else
 		warnAddsSoon:Schedule(40)	-- 5 secs prewarning
 		self:ScheduleMethod(45, "addsTimer")
-		timerAdds:Start(45)
+		timerAdds:Start()
 	end
 end
 
