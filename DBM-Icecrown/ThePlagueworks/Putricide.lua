@@ -39,7 +39,7 @@ local specWarnVolatileOozeOther		= mod:NewSpecialWarningTarget(70447, false)
 local specWarnGaseousBloatOther		= mod:NewSpecialWarningTarget(70672, false)
 local specWarnMalleableGoo			= mod:NewSpecialWarning("SpecWarnMalleableGoo")
 local specWarnMalleableGooNear		= mod:NewSpecialWarning("SpecWarnMalleableGooNear")
-local specWarnChokingGasBomb		= mod:NewSpecialWarningSpell(71255, mod:IsTank())
+local specWarnChokingGasBomb		= mod:NewSpecialWarningSpell(71255, mod:IsMelee() or mod:IsTank())
 local specWarnMalleableGooCast		= mod:NewSpecialWarningSpell(72295, false)
 local specWarnOozeVariable			= mod:NewSpecialWarningYou(70352)		-- Heroic Ability
 local specWarnGasVariable			= mod:NewSpecialWarningYou(70353)		-- Heroic Ability
@@ -51,7 +51,7 @@ local timerGaseousBloat				= mod:NewTargetTimer(20, 70672)			-- Duration of debu
 local timerSlimePuddleCD			= mod:NewCDTimer(35, 70341)				-- Approx
 local timerUnstableExperimentCD		= mod:NewNextTimer(38, 70351)			-- Used every 38 seconds exactly except after phase changes
 local timerChokingGasBombCD			= mod:NewNextTimer(35.5, 71255)
-local timerMalleableGooCD			= mod:NewCDTimer(25, 72295)
+local timerMalleableGooCD			= mod:NewCDTimer(20, 72295)
 local timerTearGas					= mod:NewBuffActiveTimer(16, 71615)
 local timerPotions					= mod:NewBuffActiveTimer(30, 73122)
 local timerMutatedPlagueCD			= mod:NewCDTimer(10, 72451)				-- 10 to 11
@@ -89,6 +89,9 @@ local warned_preP2 = false
 local warned_preP3 = false
 local spamPuddle = 0
 local spamGas = 0
+
+local isHeroic = mod:IsDifficulty("heroic10") or mod:IsDifficulty("heroic25")
+local isNormal = mod:IsDifficulty("normal10") or mod:IsDifficulty("normal25")
 
 function mod:OnCombatStart(delay)
 	berserkTimer:Start(-delay)
@@ -188,18 +191,18 @@ function mod:NextPhase()
 		warnUnstableExperimentSoon:Schedule(15)
 		timerUnstableExperimentCD:Start(20)
 		timerSlimePuddleCD:Start(10)
-		timerMalleableGooCD:Start(5)
-		timerChokingGasBombCD:Start(15)
-		if mod:IsDifficulty("heroic10") or mod:IsDifficulty("heroic25") then
+		timerMalleableGooCD:Start(9)
+		timerChokingGasBombCD:Start(isHeroic and 15 or 12)
+		if isHeroic then
 			timerUnboundPlagueCD:Start(50)
 			-- ttsUnboundPlagueCD:Schedule(50-ttsUnboundPlagueCDOffset)
 		end
 	elseif self.vb.phase == 3 then
 		timerSlimePuddleCD:Start(15)
 		timerMalleableGooCD:Start(9)
-		-- timerChokingGasBombCD:Start(12)
-		timerChokingGasBombCD:Start(35.5)
-		if mod:IsDifficulty("heroic10") or mod:IsDifficulty("heroic25") then
+		timerChokingGasBombCD:Start(12)
+		--timerChokingGasBombCD:Start(35.5)
+		if isHeroic then
 			timerUnboundPlagueCD:Start(50)
 			-- ttsUnboundPlagueCD:Schedule(50-ttsUnboundPlagueCDOffset)
 		end
