@@ -58,10 +58,10 @@ f:SetScript("OnUpdate", fCLFix)
 --  Globals/Default Options  --
 -------------------------------
 DBM = {
-	Revision = ("$Revision: 50933 $"):sub(12, -3),
-	Version = "5.0933",
-	DisplayVersion = "5.0933 Frostmourne", -- the string that is shown as version
-	ReleaseRevision = 50933 -- the revision of the latest stable version that is available (for /dbm ver2)
+	Revision = ("$Revision: 5100 $"):sub(12, -3),
+	Version = "5.1",
+	DisplayVersion = "5.1 Frostmourne", -- the string that is shown as version
+	ReleaseRevision = 5100 -- the revision of the latest stable version that is available (for /dbm ver2)
 }
 
 DBM_SavedOptions = {}
